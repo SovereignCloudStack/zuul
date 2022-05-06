@@ -1,29 +1,22 @@
-zuul
-====
-
 Ansible role to set up zuul on a single-node installation with docker-compose.
 
-Requirements
-------------
+**Requirements**
 
 docker.io
 docker-compose
 
-Role Variables
---------------
+**Role Variables**
 
 Please look into the defaults file. The content would be too complex to display it here in a clear manner.
 If you are not familiar with zuul you should have at the "Quick-Start" from zuul-ci.org before using this role.
 
-Dependencies
-------------
+**Dependencies**
 
 None
 
-Example Playbook
-----------------
+**Example Playbook**
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too::
 
     - name: setup zuul playbook
       hosts: zuul.osism.com
@@ -31,8 +24,7 @@ Including an example of how to use your role (for instance, with variables passe
          - name: setup zuul role
            role: zuul
 
-Troubleshooting
----------------
+**Troubleshooting**
 
 **Your git repos are not displayed?**
 Have you thought of naming your repos with the prefix of your organization? *release* should be *osism/release* for example.
@@ -45,12 +37,10 @@ Each *project* section needs to have the *default-branch* stanza.
 **Your logs are not displayed in the web-UI?**
 Check, if the IP of the logfile server is really correct. In combination with GitHub there is a bug which keeps the GitHub App posting to the old IP even if the webhook IP was changed. Current workaround: Delete the old GitHub App and create a new one.
 
-License
--------
+**License**
 
 Apache License 2.0
 
-Author Information
-------------------
+**Author Information**
 
 Created by Tim Beermann in behalf of OSISM GmbH.
