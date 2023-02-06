@@ -11,7 +11,7 @@ terraform {
 
 # create a network for zuul infrastructure
 resource "openstack_networking_network_v2" "zuul_network" {
-  name           = "zuul_network"
+  name           = var.zuul_network_name
   admin_state_up = "true"
 }
 
@@ -19,20 +19,20 @@ resource "openstack_networking_network_v2" "zuul_network" {
 resource "openstack_networking_subnet_v2" "zuul_subnet" {
   name       = "zuul_subnet"
   network_id = openstack_networking_network_v2.zuul_network.id
-  cidr       = "192.168.199.0/24"
+  cidr       = var.zuul_subnet_cidr
   ip_version = 4
 }
 
 # add subnet to (pre existing) router
 resource "openstack_networking_router_interface_v2" "int_1" {
-  router_id = "f3767ea8-9b83-4993-96e0-39affad7acf4"
+  router_id = var.router_id
   subnet_id = openstack_networking_subnet_v2.zuul_subnet.id
 }
 
 # create seperate security group
 resource "openstack_networking_secgroup_v2" "zuul_secgroup" {
-  name        = "zuul_secgroup"
-  description = "My neutron security group"
+  name        = var.zuul_security_group
+  description = "zuul security group"
 }
 
 # open ssh port
@@ -43,19 +43,39 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh" {
   port_range_min    = 22
   port_range_max    = 22
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = "${openstack_networking_secgroup_v2.zuul_secgroup.id}"
+  security_group_id = openstack_networking_secgroup_v2.zuul_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_gerrit_http" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 8080
+  port_range_max    = 8080
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.zuul_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_zuul_http" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 9000
+  port_range_max    = 9000
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.zuul_secgroup.id
 }
 
 # create zuul head node
 resource "openstack_compute_instance_v2" "zuul" {
   name            = "zuul"
-  image_id        = "f7aff0ef-5b69-42c1-844d-56f57db1e44b"
-  flavor_name     = "SCS-4V:16:100s"
-  key_pair        = "gonicus-bzapiec"
+  image_id        = var.zuul_instance_image_id
+  flavor_name     = var.zuul_flavor_name
+  key_pair        = var.zuul_key_pair
   security_groups = ["${openstack_networking_secgroup_v2.zuul_secgroup.id}"]
 
   network {
-    name = "${openstack_networking_network_v2.zuul_network.name}"
+    name = openstack_networking_network_v2.zuul_network.name
   }
 }
 
