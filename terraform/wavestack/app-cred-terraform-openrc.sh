@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+export OS_AUTH_TYPE=v3applicationcredential
+export OS_AUTH_URL=https://api.wavestack.de:5000
+export OS_IDENTITY_API_VERSION=3
+export OS_REGION_NAME="MUC5"
+export OS_INTERFACE=public
+export OS_APPLICATION_CREDENTIAL_ID=e8b26493495a4f90aa1c379b2c9b65a2
+export OS_APPLICATION_CREDENTIAL_SECRET=qwDjyb-c5cPTT3u-MRobaDnJyvulNiJTVeS8TQ1PwzpL5M2J4sII5v9mffmP-5LPRmkq9y89QafUZDOKTgN2qw
