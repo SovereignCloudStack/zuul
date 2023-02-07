@@ -1,0 +1,7 @@
+zuul_network_name = "zuul_network"
+zuul_subnet_cidr = "192.168.199.0/24"
+router_id = "f3767ea8-9b83-4993-96e0-39affad7acf4"
+zuul_security_group = "zuul_secgroup"
+zuul_instance_image_id = "f7aff0ef-5b69-42c1-844d-56f57db1e44b"
+zuul_flavor_name = "SCS-4V:16:100s"
+zuul_key_pair = "gonicus-bzapiec"
