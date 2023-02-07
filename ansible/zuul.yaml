@@ -1,0 +1,8 @@
+---
+
+- name: setup zuul playbook
+  hosts: zuul.osism.com
+  roles:
+     - name: setup zuul role
+       role: zuul
+
