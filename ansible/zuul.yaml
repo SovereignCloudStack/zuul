@@ -1,8 +1,11 @@
 ---
 
 - name: setup zuul playbook
-  hosts: zuul.osism.com
+  hosts: zuul
   roles:
      - name: setup zuul role
-       role: zuul
+       role: osism.services.zuul
+       become: true
+       vars:
+         zuul_user: "root"
 
