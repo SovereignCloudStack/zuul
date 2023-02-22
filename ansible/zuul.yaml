@@ -1,5 +1,15 @@
 ---
 
+- name: generate SSH key for nodepool
+  hosts: localhost
+  tasks:
+    - community.crypto.openssh_keypair:
+        path: "{{ playbook_dir }}/nodepool"
+        type: rsa
+        size: 4096
+        state: present
+
+
 - name: setup zuul playbook
   hosts: zuul
   roles:
