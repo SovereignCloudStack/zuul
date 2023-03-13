@@ -21,42 +21,75 @@
 #         size: 4096
 #         state: present
 
-- name: getting certificates for webserver
-  hosts: zuul
-  roles:
-    - role: felixfontein.acme_certificate
-      # vars_files:
-      #   - ./zuul-config.yaml
-      dns_provider: ''
-      #domains: ['zuul.scs.community', 'zuul-log.scs.community']
-      domains: ['zuul.scs.community']
-      keys_path: "acme/"
-      acme_account: "acme/acme-account.key"
-      acme_email: zapiec@gonicus.de
-      challenge: "http-01"
-      server_location: "/opt/acme/"
-      challenge_user: ubuntu
-      challenge_group: ubuntu
-      http_challenge_user: ubuntu
-      http_challenge_group: ubuntu
+# - name: getting certificates for webserver
+#   hosts: zuul
+#   roles:
+#     - role: felixfontein.acme_certificate
+#       # vars_files:
+#       #   - ./zuul-config.yaml
+#       dns_provider: ''
+#       #domains: ['zuul.scs.community', 'zuul-log.scs.community']
+#       domains: ['zuul.scs.community']
+#       keys_path: "acme/"
+#       acme_account: "acme/acme-account.key"
+#       acme_email: zapiec@gonicus.de
+#       challenge: "http-01"
+#       server_location: "/opt/acme/"
+#       challenge_user: ubuntu
+#       challenge_group: ubuntu
+#       http_challenge_user: ubuntu
+#       http_challenge_group: ubuntu
 
-- name: setup zuul playbook
+- name: Pull caddy docker container
   hosts: zuul
+  become: true
   pre_tasks:
-    - name: install docker python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker
+    - name: Creates directory
+      file:
+        path: /opt/caddy
+        state: directory
+    - name: Copy file with owner and permissions
+      ansible.builtin.copy:
+        src: Caddyfile
+        dest: /opt/caddy/Caddyfile
+        owner: root
+        group: root
+        mode: '0644'
 
-    - name: install docker-compose python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker-compose
+  tasks:
+    - docker_image:
+        name: "caddy"
+        source: pull
+        state: present
+    - docker_container:
+        name: caddy
+        image: caddy
+        state: started
+        network_mode: host
+        exposed_ports:
+          - 80
+          - 443
+        volumes:
+          - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
+      
 
-  roles:
-     - name: setup zuul role
-       role: osism.services.zuul
-       become: true
-       vars_files:
-         - ./zuul_config.yaml
+# - name: setup zuul playbook
+#   hosts: zuul
+#   pre_tasks:
+#     - name: install docker python libraries
+#       become: true
+#       ansible.builtin.pip:
+#         name: docker
+
+#     - name: install docker-compose python libraries
+#       become: true
+#       ansible.builtin.pip:
+#         name: docker-compose
+
+#   roles:
+#      - name: setup zuul role
+#        role: osism.services.zuul
+#        become: true
+#        vars_files:
+#         - ./zuul_config.yaml
 
