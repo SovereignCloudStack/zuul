@@ -1,0 +1,6 @@
+---
+
+fqdn_zuul: 'zuul.scs.community'
+fqdn_zuul_log: 'zuul-logs.scs.community'
+zuul_user: 'root'
+

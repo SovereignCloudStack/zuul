@@ -55,7 +55,6 @@
         owner: root
         group: root
         mode: '0644'
-
   tasks:
     - docker_image:
         name: "caddy"
@@ -73,23 +72,23 @@
           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
       
 
-# - name: setup zuul playbook
-#   hosts: zuul
-#   pre_tasks:
-#     - name: install docker python libraries
-#       become: true
-#       ansible.builtin.pip:
-#         name: docker
+- name: setup zuul playbook
+  hosts: zuul
+  pre_tasks:
+    - name: install docker python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker
 
-#     - name: install docker-compose python libraries
-#       become: true
-#       ansible.builtin.pip:
-#         name: docker-compose
+    - name: install docker-compose python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker-compose
 
-#   roles:
-#      - name: setup zuul role
-#        role: osism.services.zuul
-#        become: true
-#        vars_files:
-#         - ./zuul_config.yaml
+  roles:
+     - name: setup zuul role
+       role: osism.services.zuul
+       become: true
+       vars_files:
+        - ./zuul_config.yaml
 
