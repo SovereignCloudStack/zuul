@@ -64,10 +64,11 @@
         name: caddy
         image: caddy
         state: started
-        network_mode: host
-        exposed_ports:
-          - 80
-          - 443
+        networks:
+          - name: "zuul_default"
+        ports:
+          - "0.0.0.0:80:80/tcp"
+          - "0.0.0.0:443:443/tcp"
         volumes:
           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
       
