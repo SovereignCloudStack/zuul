@@ -1,0 +1,13 @@
+zuul.scs.community, zuul-logs.scs.community {
+    reverse_proxy zuul_log_server:80
+}
+
+zuul.scs.community:443, zuul-logs.scs.community:443 {
+    reverse_proxy https://zuul_log_server:443 {
+        transport http {
+            tls
+            tls_insecure_skip_verify
+            read_buffer 8192
+        }
+    }
+}
