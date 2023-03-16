@@ -89,5 +89,31 @@
   roles:
      - name: setup zuul role
        role: osism.services.zuul
+       vars:
+        zuul_connections:
+          github:
+            driver: github
+            webhook_token: "{{ webhook_token }}"
+            app_id: "{{ github_app_id }}"
+            app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
+          opendevorg:
+            name: opendev
+            driver: git
+            baseurl: https://opendev.org
+        zuul_tenants:
+          - tenant:
+              name: my-tenant-name
+              source:
+                opendevorg:
+                  untrusted-projects:
+                    - zuul/zuul-jobs:
+                        include:
+                          - job
+                github:
+                  config-projects:
+                    - my-org/zuul_demo_config:
+                        load-branch: main
+                  untrusted-projects:
+                    - my-org/zuul_demo_repo
        become: true
 
