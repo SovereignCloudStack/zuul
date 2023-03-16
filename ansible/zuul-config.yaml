@@ -1,6 +1,7 @@
 ---
 
-fqdn_zuul: 'zuul.scs.community'
-fqdn_zuul_log: 'zuul-logs.scs.community'
-zuul_user: 'root'
+zuul_webserver_fqdn: 'zuul.scs.community'
+zuul_logserver_fqdn: 'zuul-logs.scs.community'
+zuul_webserver_admin: 'zapiec@gonicus.de'
+
 

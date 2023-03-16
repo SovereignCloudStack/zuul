@@ -1,80 +1,50 @@
 ---
 
-# - name: generate SSH key for nodepool
-#   hosts: localhost
-#   tasks:
-#     - community.crypto.openssh_keypair:
-#         path: "{{ playbook_dir }}/nodepool"
-#         type: rsa
-#         size: 4096
-#         state: present
-
-# - name: generate ACME account key for zuul and zuul-log
-#   hosts: localhost
-#   vars_files:
-#     - ./zuul-config.yaml
-#   tasks:
-#     - name: Generate RSA 4096 key
-#       community.crypto.openssl_privatekey:
-#         path: "{{ acme_account_key_path }}"
-#         type: RSA
-#         size: 4096
-#         state: present
-
-# - name: getting certificates for webserver
-#   hosts: zuul
-#   roles:
-#     - role: felixfontein.acme_certificate
-#       # vars_files:
-#       #   - ./zuul-config.yaml
-#       dns_provider: ''
-#       #domains: ['zuul.scs.community', 'zuul-log.scs.community']
-#       domains: ['zuul.scs.community']
-#       keys_path: "acme/"
-#       acme_account: "acme/acme-account.key"
-#       acme_email: zapiec@gonicus.de
-#       challenge: "http-01"
-#       server_location: "/opt/acme/"
-#       challenge_user: ubuntu
-#       challenge_group: ubuntu
-#       http_challenge_user: ubuntu
-#       http_challenge_group: ubuntu
-
-- name: Pull caddy docker container
-  hosts: zuul
-  become: true
-  pre_tasks:
-    - name: Creates directory
-      file:
-        path: /opt/caddy
-        state: directory
-    - name: Copy file with owner and permissions
-      ansible.builtin.copy:
-        src: Caddyfile
-        dest: /opt/caddy/Caddyfile
-        owner: root
-        group: root
-        mode: '0644'
+- name: generate SSH key for nodepool
+  hosts: localhost
   tasks:
-    - docker_image:
-        name: "caddy"
-        source: pull
+    - community.crypto.openssh_keypair:
+        path: "{{ playbook_dir }}/nodepool"
+        type: rsa
+        size: 4096
         state: present
-    - docker_container:
-        name: caddy
-        image: caddy
-        state: started
-        networks:
-          - name: "zuul_default"
-        ports:
-          - "0.0.0.0:80:80/tcp"
-          - "0.0.0.0:443:443/tcp"
-        volumes:
-          - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
-      
 
+# - name: Pull caddy docker container
+#   hosts: zuul
+#   become: true
+#   pre_tasks:
+#     - name: Creates directory
+#       file:
+#         path: /opt/caddy
+#         state: directory
+#     - name: Copy file with owner and permissions
+#       ansible.builtin.copy:
+#         src: Caddyfile
+#         dest: /opt/caddy/Caddyfile
+#         owner: root
+#         group: root
+#         mode: '0644'
+#   tasks:
+#     - docker_image:
+#         name: "caddy"
+#         source: pull
+#         state: present
+#     - docker_container:
+#         name: caddy
+#         image: caddy
+#         state: started
+#         networks:
+#           - name: "zuul_default"
+#         ports:
+#           - "0.0.0.0:80:80/tcp"
+#           - "0.0.0.0:443:443/tcp"
+#         volumes:
+#           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
+      
 - name: setup zuul playbook
   hosts: zuul
+  vars_files:
+        - ./zuul-config.yaml
   pre_tasks:
     - name: install docker python libraries
       become: true
@@ -85,11 +55,8 @@
       become: true
       ansible.builtin.pip:
         name: docker-compose
-
   roles:
      - name: setup zuul role
        role: osism.services.zuul
        become: true
-       vars_files:
-        - ./zuul_config.yaml
 
