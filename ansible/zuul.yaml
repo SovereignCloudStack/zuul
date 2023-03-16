@@ -46,6 +46,37 @@
   vars_files:
         - ./zuul-config.yaml
   pre_tasks:
+    - name: install openstacksdk python libraries
+      become: true
+      ansible.builtin.pip:
+        name: openstacksdk
+        version: 0.61.0
+
+    - name: Create /etc/openstack/
+      ansible.builtin.file:
+        state: directory
+        path: /etc/openstack
+        owner: root
+        group: root
+        mode: 0755
+      become: true
+
+    - name: Deploy clouds.yaml file
+      ansible.builtin.copy:
+        src: clouds.yaml
+        dest: /etc/openstack/clouds.yaml
+        owner: root
+        group: zuul
+        mode: '0640'
+      become: true
+
+    - name: Create keypair in the cloud
+      openstack.cloud.keypair:
+        cloud: wavestack
+        name: nodepool
+        public_key: "{{ lookup('file', 'nodepool.pub') }}"
+      become: true
+
     - name: install docker python libraries
       become: true
       ansible.builtin.pip:
