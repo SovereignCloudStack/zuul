@@ -1,5 +1,4 @@
 ---
-
 - name: generate SSH key for nodepool
   hosts: localhost
   tasks:
@@ -40,11 +39,11 @@
 #           - "0.0.0.0:443:443/tcp"
 #         volumes:
 #           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
-      
+
 - name: setup zuul playbook
   hosts: zuul
   vars_files:
-        - ./zuul-config.yaml
+    - ./zuul-config.yaml
   pre_tasks:
     - name: install openstacksdk python libraries
       become: true
@@ -67,7 +66,7 @@
         dest: /etc/openstack/clouds.yaml
         owner: root
         group: zuul
-        mode: '0640'
+        mode: "0640"
       become: true
 
     - name: Create keypair in the cloud
@@ -87,33 +86,88 @@
       ansible.builtin.pip:
         name: docker-compose
   roles:
-     - name: setup zuul role
-       role: osism.services.zuul
-       vars:
-        zuul_connections:
-          github:
+    - name: setup zuul role
+      role: osism.services.zuul
+      vars:
+        connections:
+          githubzuulapp:
             driver: github
             webhook_token: "{{ webhook_token }}"
             app_id: "{{ github_app_id }}"
             app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
-          opendevorg:
-            name: opendev
-            driver: git
-            baseurl: https://opendev.org
-        zuul_tenants:
+
+        tenants:
           - tenant:
-              name: my-tenant-name
+              name: osism-testbed
               source:
-                opendevorg:
-                  untrusted-projects:
-                    - zuul/zuul-jobs:
-                        include:
-                          - job
-                github:
+                githubzuulapp:
                   config-projects:
-                    - my-org/zuul_demo_config:
+                    - master-caster/zuul-config:
                         load-branch: main
                   untrusted-projects:
-                    - my-org/zuul_demo_repo
-       become: true
+                    - master-caster/apimon-tests
 
+        nodepool_labels:
+          labels:
+            - name: ubuntu-jammy
+              min-ready: 1
+
+        nodepool_providers:
+          diskimages:
+            - name: base
+              abstract: True
+              elements:
+                - vm
+                - block-device-efi
+                - growroot
+                - openssh-server
+                - enable-serial-console
+                - cloud-init
+              formats:
+                - qcow2
+              env-vars:
+                TMPDIR: /srv/dib_tmp
+                DIB_CHECKSUM: "1"
+                DIB_IMAGE_CACHE: /srv/dib_cache
+
+            - name: ubuntu-jammy
+              parent: base
+              pause: False
+              rebuild-age: 86400
+              elements:
+                - ubuntu-minimal
+              release: jammy
+              username: ubuntu
+              formats:
+                - qcow2
+              env-vars:
+                DIB_APT_LOCAL_CACHE: "0"
+                DIB_DISABLE_APT_CLEANUP: "1"
+                FS_TYPE: ext3
+                DIB_RELEASE: jammy
+
+          providers:
+            - name: wavestack
+              driver: openstack
+              cloud: wavestack
+              region-name: "MUC5"
+              rate: 1.0
+              boot-timeout: 120
+              launch-retries: 3
+              diskimages:
+                - name: ubuntu-jammy
+                  pause: false
+              pools:
+                - name: main
+                  max-servers: 10
+                  networks:
+                    - zuul_network
+                  security-groups:
+                    - zuul_secgroup
+                  labels:
+                    - name: ubuntu-jammy
+                      flavor-name: SCS-2V:8:20
+                      diskimage: ubuntu-jammy
+                      console-log: True
+                      key-name: nodepool
+      become: true

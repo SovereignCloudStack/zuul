@@ -1,7 +1,11 @@
 ---
 
+zuul_tag: 8.2.0
+zuul_zookeeper_tag: 3.8.1
 zuul_webserver_fqdn: 'zuul.scs.community'
 zuul_logserver_fqdn: 'zuul-logs.scs.community'
 zuul_webserver_admin: 'zapiec@gonicus.de'
-
+webhook_token: cc02241784d72ff94b5492abf50f34e2c271a4c8
+github_pem_name: my-zuul-app-private-key
+github_app_id: 294493
 
