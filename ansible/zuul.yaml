@@ -95,7 +95,7 @@
             webhook_token: "{{ webhook_token }}"
             app_id: "{{ github_app_id }}"
             app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
-          opendev:
+          opendevzuul:
             driver: git
             baseurl: https://opendev.org/
 
@@ -103,7 +103,7 @@
           - tenant:
               name: osism-testbed
               source:
-                opendev:
+                opendevzuul:
                   untrusted-projects:
                     - zuul/zuul-jobs
                 githubzuulapp:
