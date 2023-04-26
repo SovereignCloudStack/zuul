@@ -95,11 +95,17 @@
             webhook_token: "{{ webhook_token }}"
             app_id: "{{ github_app_id }}"
             app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
+          opendev:
+            driver: git
+            baseurl: https://opendev.org/
 
         tenants:
           - tenant:
               name: osism-testbed
               source:
+                opendev:
+                  untrusted-projects:
+                    - zuul/zuul-jobs
                 githubzuulapp:
                   config-projects:
                     - master-caster/zuul-config:
@@ -107,11 +113,15 @@
                   untrusted-projects:
                     - master-caster/apimon-tests
 
+        # nodepool labels configuration
         nodepool_labels:
           labels:
             - name: ubuntu-jammy
               min-ready: 1
 
+
+        # nodepool providers configuration containing the openstack part
+        # and the DIB (disk image builder)
         nodepool_providers:
           diskimages:
             - name: base
