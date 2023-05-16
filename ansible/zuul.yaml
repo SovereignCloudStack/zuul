@@ -125,6 +125,7 @@
             webhook_token: "{{ webhook_token }}"
             app_id: "{{ github_app_id }}"
             app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
+          # we include public job definitions here  
           opendevorg:
             name: opendev
             driver: git
@@ -135,14 +136,17 @@
               name: osism-testbed
               source:
                 opendevorg:
+                  # just a repo to include some jobs definitions
                   untrusted-projects:
                     - zuul/zuul-jobs:
                         include:
                           - job
                 githubzuulapp:
+                  # config repository
                   config-projects:
                     - master-caster/zuul-config:
                         load-branch: main
+                  # repo to do CI/CD on
                   untrusted-projects:
                     - master-caster/apimon-tests
 
