@@ -69,6 +69,24 @@
         mode: "0640"
       become: true
 
+    - name: Deploy package-installs.yaml file
+      ansible.builtin.copy:
+        src: package-installs.yaml
+        dest: /srv/nodepool/elements/package-installs.yaml
+        owner: root
+        group: zuul
+        mode: "0644"
+      become: true
+
+    - name: Deploy additionals elements used for DIB
+      ansible.builtin.copy:
+        src: elements/
+        dest: /srv/nodepool/elements/
+        owner: root
+        group: zuul
+        mode: "0644"
+      become: true
+
     - name: Create keypair in the cloud
       openstack.cloud.keypair:
         cloud: wavestack
@@ -98,7 +116,7 @@
           opendevorg:
             name: opendev
             driver: git
-            baseurl: https://opendev.org/
+            baseurl: https://opendev.org
 
         tenants:
           - tenant:
@@ -107,8 +125,8 @@
                 opendevorg:
                   untrusted-projects:
                     - zuul/zuul-jobs:
-                      include:
-                        - job
+                        include:
+                          - job
                 githubzuulapp:
                   config-projects:
                     - master-caster/zuul-config:
@@ -126,6 +144,7 @@
         # nodepool providers configuration containing the openstack part
         # and the DIB (disk image builder)
         nodepool_providers:
+          elements-dir: /srv/nodepool/elements
           diskimages:
             - name: base
               abstract: True
@@ -136,12 +155,17 @@
                 - openssh-server
                 - enable-serial-console
                 - cloud-init
+                - package-installs
+                - pkg-map
+                - infra-package-needs
+                - zuul-worker
               formats:
                 - qcow2
               env-vars:
                 TMPDIR: /srv/dib_tmp
                 DIB_CHECKSUM: "1"
                 DIB_IMAGE_CACHE: /srv/dib_cache
+                DIB_CLOUD_INIT_DATASOURCES: OpenStack
 
             - name: ubuntu-jammy
               parent: base
