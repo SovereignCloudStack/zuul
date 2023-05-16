@@ -1,5 +1,7 @@
 ---
-- name: generate SSH key for nodepool
+# create key pair if not provided
+# will be used for SSH access in cloud VMs
+- name: Generate SSH key for nodepool
   hosts: localhost
   tasks:
     - community.crypto.openssh_keypair:
@@ -40,7 +42,8 @@
 #         volumes:
 #           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
 
-- name: setup zuul playbook
+# install everything necessary to use the osism zuul role
+- name: Setup zuul playbook
   hosts: zuul
   vars_files:
     - ./zuul-config.yaml
@@ -51,6 +54,7 @@
         name: openstacksdk
         version: 0.61.0
 
+    # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
       ansible.builtin.file:
         state: directory
@@ -60,6 +64,7 @@
         mode: 0755
       become: true
 
+    # copy cloud connection information to the right place
     - name: Deploy clouds.yaml file
       ansible.builtin.copy:
         src: clouds.yaml
@@ -69,6 +74,15 @@
         mode: "0640"
       become: true
 
+    - name: Upload previously created key to cloud
+      openstack.cloud.keypair:
+        cloud: wavestack
+        name: nodepool
+        public_key: "{{ lookup('file', 'nodepool.pub') }}"
+      become: true
+
+    # get package-installs.yaml in place to provide additional
+    # software configuration for the cloud images
     - name: Deploy package-installs.yaml file
       ansible.builtin.copy:
         src: package-installs.yaml
@@ -78,6 +92,7 @@
         mode: "0644"
       become: true
 
+    # install recommended elements for zuul purposes
     - name: Deploy additionals elements used for DIB
       ansible.builtin.copy:
         src: elements/
@@ -87,27 +102,24 @@
         mode: "0644"
       become: true
 
-    - name: Create keypair in the cloud
-      openstack.cloud.keypair:
-        cloud: wavestack
-        name: nodepool
-        public_key: "{{ lookup('file', 'nodepool.pub') }}"
-      become: true
-
-    - name: install docker python libraries
+    - name: Install docker python libraries
       become: true
       ansible.builtin.pip:
         name: docker
 
-    - name: install docker-compose python libraries
+    - name: Install docker-compose python libraries
       become: true
       ansible.builtin.pip:
         name: docker-compose
   roles:
+    # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
       role: osism.services.zuul
       vars:
         connections:
+          # since we want to interact with github we need
+          # a github app. The apps values go here.
+          # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
           githubzuulapp:
             driver: github
             webhook_token: "{{ webhook_token }}"
