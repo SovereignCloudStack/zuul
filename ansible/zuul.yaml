@@ -213,8 +213,6 @@
                 - pkg-map
                 - infra-package-needs
                 - zuul-worker
-                - dib-python
-                - ensure-venv
               formats:
                 - qcow2
               env-vars:
