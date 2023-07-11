@@ -133,7 +133,7 @@
 
         tenants:
           - tenant:
-              name: osism-testbed
+              name: SCS
               source:
                 opendevorg:
                   # just a repo to include some jobs definitions
@@ -144,11 +144,49 @@
                 githubzuulapp:
                   # config repository
                   config-projects:
-                    - master-caster/zuul-config:
+                    - SovereignCloudStack/zuul-config:
                         load-branch: main
                   # repo to do CI/CD on
                   untrusted-projects:
-                    - master-caster/apimon-tests
+                    - SovereignCloudStack/Design-Docs
+                    - SovereignCloudStack/Docs
+                    - SovereignCloudStack/Operational-Docs
+                    - SovereignCloudStack/contributor-guide
+                    - SovereignCloudStack/docker-horizon
+                    - SovereignCloudStack/documentation
+                    - SovereignCloudStack/generics
+                    - SovereignCloudStack/graphics
+                    - SovereignCloudStack/gx-scs-identity-provider
+                    - SovereignCloudStack/infrastructure
+                    - SovereignCloudStack/issues
+                    - SovereignCloudStack/k8s-cassandra
+                    #- SovereignCloudStack/k8s-cluster-api-provider
+                    - SovereignCloudStack/k8s-cortex
+                    - SovereignCloudStack/k8s-gatekeeper
+                    - SovereignCloudStack/k8s-grafana
+                    - SovereignCloudStack/k8s-harbor
+                    - SovereignCloudStack/k8s-harbor-manual
+                    - SovereignCloudStack/k8s-minio
+                    - SovereignCloudStack/k8s-open-policy-agent
+                    - SovereignCloudStack/k8s-operator-scylla
+                    - SovereignCloudStack/k8s-os-health-monitor
+                    - SovereignCloudStack/k8s-prometheus
+                    - SovereignCloudStack/k8s-template
+                    - SovereignCloudStack/openstack-flavor-manager
+                    - SovereignCloudStack/openstack-health-monitor
+                    - SovereignCloudStack/openstack-orphaned-resource-cleaner
+                    #- SovereignCloudStack/openstack-simple-stress
+                    - SovereignCloudStack/openstack-vyos-image
+                    - SovereignCloudStack/poc-gardener
+                    - SovereignCloudStack/poc-kubermatic
+                    - SovereignCloudStack/poc-rancher
+                    - SovereignCloudStack/testbed-gx-iam
+                    - SovereignCloudStack/testbed-gx-k8s
+                    - SovereignCloudStack/testbed-gx-scs
+                    - SovereignCloudStack/website
+                    - SovereignCloudStack/zuul-sandbox
+                    - SovereignCloudStack/zuul_deployment
+                    - SovereignCloudStack/status-page-api
 
         # nodepool labels configuration
         nodepool_labels:
