@@ -71,6 +71,29 @@
   vars_files:
     - ./zuul-config.yaml
   pre_tasks:
+    - name: Ensure docker-compose is available
+      become: true
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Ensure certbot is available
+      become: true
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+
+    - name: Install docker python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker
+
+    - name: Install docker-compose python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker-compose
+
     - name: install openstacksdk python libraries
       become: true
       ansible.builtin.pip:
@@ -96,6 +119,10 @@
         group: zuul
         mode: "0640"
       become: true
+
+    # TODO Add user + group zuul 
+    # erstellen /srv/nodepool/elements
+    # certbot install
 
     - name: Upload previously created key to cloud
       openstack.cloud.keypair:
@@ -125,15 +152,6 @@
         mode: "0644"
       become: true
 
-    - name: Install docker python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker
-
-    - name: Install docker-compose python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker-compose
   roles:
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
@@ -186,7 +204,7 @@
         zuul_nodepool_labels:
           labels:
             - name: ubuntu-jammy
-              min-ready: 1
+              min-ready: 2
 
 
         # nodepool providers configuration containing the openstack part
