@@ -10,49 +10,46 @@
         size: 4096
         state: present
 
-# - name: Pull caddy docker container
-#   hosts: zuul
-#   become: true
-#   pre_tasks:
-#     - name: Creates directory
-#       file:
-#         path: /opt/caddy
-#         state: directory
-#     - name: Copy file with owner and permissions
-#       ansible.builtin.copy:
-#         src: Caddyfile
-#         dest: /opt/caddy/Caddyfile
-#         owner: root
-#         group: root
-#         mode: '0644'
-#   tasks:
-#     - docker_image:
-#         name: "caddy"
-#         source: pull
-#         state: present
-#     - docker_container:
-#         name: caddy
-#         image: caddy
-#         state: started
-#         networks:
-#           - name: "zuul_default"
-#         ports:
-#           - "0.0.0.0:80:80/tcp"
-#           - "0.0.0.0:443:443/tcp"
-#         volumes:
-#           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
-
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
   hosts: zuul
   vars_files:
     - ./zuul-config.yaml
   pre_tasks:
+    - name: Ensure docker-compose is available
+      become: true
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Ensure certbot is available
+      become: true
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+
+    - name: Install docker python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker
+
+    - name: Install docker-compose python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker-compose
+
     - name: install openstacksdk python libraries
       become: true
       ansible.builtin.pip:
         name: openstacksdk
         version: 0.61.0
+
+    - name: Create self-signed certificate, if configured.
+      command: >
+        openssl req -x509 -nodes -subj '/CN=zuul' -days 365
+        -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
+        creates=/tmp/zuul.cert
 
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
@@ -73,6 +70,10 @@
         group: zuul
         mode: "0640"
       become: true
+
+    # TODO Add user + group zuul 
+    # erstellen /srv/nodepool/elements
+    # certbot install
 
     - name: Upload previously created key to cloud
       openstack.cloud.keypair:
@@ -102,21 +103,12 @@
         mode: "0644"
       become: true
 
-    - name: Install docker python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker
-
-    - name: Install docker-compose python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker-compose
   roles:
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
       role: osism.services.zuul
       vars:
-        connections:
+        zuul_connections:
           # since we want to interact with github we need
           # a github app. The apps values go here.
           # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
@@ -131,7 +123,7 @@
             driver: git
             baseurl: https://opendev.org
 
-        tenants:
+        zuul_tenants:
           - tenant:
               name: SCS
               source:
@@ -149,7 +141,7 @@
                   # repo to do CI/CD on
                   untrusted-projects:
                     - SovereignCloudStack/Design-Docs
-                    - SovereignCloudStack/Docs
+                    #- SovereignCloudStack/Docs
                     - SovereignCloudStack/Operational-Docs
                     - SovereignCloudStack/contributor-guide
                     - SovereignCloudStack/docker-horizon
@@ -160,7 +152,7 @@
                     - SovereignCloudStack/infrastructure
                     - SovereignCloudStack/issues
                     - SovereignCloudStack/k8s-cassandra
-                    #- SovereignCloudStack/k8s-cluster-api-provider
+                    - SovereignCloudStack/k8s-cluster-api-provider
                     - SovereignCloudStack/k8s-cortex
                     - SovereignCloudStack/k8s-gatekeeper
                     - SovereignCloudStack/k8s-grafana
@@ -174,7 +166,7 @@
                     - SovereignCloudStack/k8s-template
                     - SovereignCloudStack/openstack-flavor-manager
                     - SovereignCloudStack/openstack-health-monitor
-                    - SovereignCloudStack/openstack-orphaned-resource-cleaner
+                    #- SovereignCloudStack/openstack-orphaned-resource-cleaner
                     #- SovereignCloudStack/openstack-simple-stress
                     - SovereignCloudStack/openstack-vyos-image
                     - SovereignCloudStack/poc-gardener
@@ -184,7 +176,7 @@
                     - SovereignCloudStack/testbed-gx-k8s
                     - SovereignCloudStack/testbed-gx-scs
                     - SovereignCloudStack/website
-                    - SovereignCloudStack/zuul-sandbox
+                    #- SovereignCloudStack/zuul-sandbox
                     - SovereignCloudStack/zuul_deployment
                     - SovereignCloudStack/status-page-api
 
@@ -192,7 +184,7 @@
         nodepool_labels:
           labels:
             - name: ubuntu-jammy
-              min-ready: 1
+              min-ready: 2
 
 
         # nodepool providers configuration containing the openstack part
