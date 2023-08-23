@@ -5,7 +5,13 @@ zuul_zookeeper_tag: 3.8.1
 zuul_webserver_fqdn: 'example.zuul.org'
 zuul_logserver_fqdn: 'example-log.zuul.org'
 zuul_webserver_admin: 'example@mail.org'
+zuul_use_acme: false
 webhook_token: SOMETOKEN
 github_pem_name: my-zuul-app-private-key
 github_app_id: my-id
 
+zuul_database:
+  user_name: DB_USER_NAME
+  user_pass: DB_USER_PW
+  root_pass: DB_ROOT_PW
+  db_name: DB_NAME
