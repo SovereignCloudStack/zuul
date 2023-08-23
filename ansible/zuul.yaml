@@ -81,7 +81,7 @@
     - name: Ensure certbot is available
       become: true
       ansible.builtin.apt:
-        name: docker-compose
+        name: certbot
         state: present
 
     - name: Install docker python libraries
@@ -153,6 +153,24 @@
       become: true
 
   roles:
+    # use certbot rule to utilize initial cert creation
+    - name: Install and configure certbot
+      role: geerlingguy.certbot
+      become: true
+      vars:
+        certbot_install_method: package
+        certbot_auto_renew: false
+        certbot_create_if_missing: true
+        certbot_create_method: standalone
+        certbot_testmode: true
+        certbot_admin_email: "{{ lets_encrypt_email }}"
+        certbot_certs:
+          - domains:
+              - "{{ zuul_webserver_fqdn }}"
+              - "{{ zuul_logserver_fqdn }}"
+        certbot_create_standalone_stop_services:
+          - docker
+
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
       role: osism.services.zuul
