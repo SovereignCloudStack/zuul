@@ -199,7 +199,7 @@
                     - SovereignCloudStack/status-page-api
 
         # nodepool labels configuration
-        nodepool_labels:
+        zuul_nodepool_labels:
           labels:
             - name: ubuntu-jammy
               min-ready: 2
@@ -207,7 +207,7 @@
 
         # nodepool providers configuration containing the openstack part
         # and the DIB (disk image builder)
-        nodepool_providers:
+        zuul_nodepool_providers:
           elements-dir: /srv/nodepool/elements
           diskimages:
             - name: base
