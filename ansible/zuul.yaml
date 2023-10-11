@@ -159,7 +159,6 @@
                   # repo to do CI/CD on
                   untrusted-projects:
                     - SovereignCloudStack/Design-Docs
-                    #- SovereignCloudStack/Docs
                     - SovereignCloudStack/Operational-Docs
                     - SovereignCloudStack/contributor-guide
                     - SovereignCloudStack/docker-horizon
@@ -184,8 +183,6 @@
                     - SovereignCloudStack/k8s-template
                     - SovereignCloudStack/openstack-flavor-manager
                     - SovereignCloudStack/openstack-health-monitor
-                    #- SovereignCloudStack/openstack-orphaned-resource-cleaner
-                    #- SovereignCloudStack/openstack-simple-stress
                     - SovereignCloudStack/openstack-vyos-image
                     - SovereignCloudStack/poc-gardener
                     - SovereignCloudStack/poc-kubermatic
@@ -194,9 +191,9 @@
                     - SovereignCloudStack/testbed-gx-k8s
                     - SovereignCloudStack/testbed-gx-scs
                     - SovereignCloudStack/website
-                    #- SovereignCloudStack/zuul-sandbox
                     - SovereignCloudStack/zuul_deployment
                     - SovereignCloudStack/status-page-api
+                    - SovereignCloudStack/standards
 
         # nodepool labels configuration
         zuul_nodepool_labels:
@@ -265,7 +262,7 @@
                     - zuul_secgroup
                   labels:
                     - name: ubuntu-jammy
-                      flavor-name: SCS-2V:8:20
+                      flavor-name: SCS-2V-8-20
                       diskimage: ubuntu-jammy
                       console-log: True
                       key-name: nodepool
