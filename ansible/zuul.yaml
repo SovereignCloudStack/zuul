@@ -144,6 +144,7 @@
         zuul_tenants:
           - tenant:
               name: SCS
+              exclude-unprotected-branches: true
               source:
                 opendevorg:
                   # just a repo to include some jobs definitions
