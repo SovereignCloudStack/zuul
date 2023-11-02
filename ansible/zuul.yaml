@@ -5,7 +5,7 @@
   hosts: localhost
   tasks:
     - community.crypto.openssh_keypair:
-        path: "{{ playbook_dir }}/nodepool"
+        path: "{{ playbook_dir }}/zuul-nodepool"
         type: rsa
         size: 4096
         state: present
@@ -52,7 +52,7 @@
       become: true
       ansible.builtin.pip:
         name: openstacksdk
-        version: 0.61.0
+        version: 2.0.0
 
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
@@ -76,9 +76,9 @@
 
     - name: Upload previously created key to cloud
       openstack.cloud.keypair:
-        cloud: wavestack
-        name: nodepool
-        public_key: "{{ lookup('file', 'nodepool.pub') }}"
+        cloud: gx-scs
+        name: zuul-nodepool
+        public_key: "{{ lookup('file', 'zuul-nodepool.pub') }}"
       become: true
 
     # get package-installs.yaml in place to provide additional
@@ -116,11 +116,30 @@
     - name: setup zuul role
       role: osism.services.zuul
       vars:
-        connections:
+        zuul_logserver_fqdn: "logs.scs.community"
+        zuul_webserver_fqdn: "zuul.scs.community"
+        # zuul_webserver_admin: "admin@example.org"
+        # zuul_zookeeper_fqdn: "zookeeper01.example.org"
+
+        zuul_log_server_tag: "alpine"
+        zuul_mariadb_tag: "10.6"
+        zuul_nodepool_tag: "9.0.0"
+        zuul_zookeeper_tag: "3.7.1"
+        zuul_zuul_tag: "9.1.0"
+
+        zuul_auth_secret: {{ vault_zuul_auth_secret }}
+
+        zuul_database:
+          user_name: {{ vault_db_user_name }}
+          user_pass: {{ vault_db_user_pass }}
+          root_pass: {{ vault_db_root_pass }}
+          db_name: {{ vault_db_name }}
+
+        zuul_connections:
           # since we want to interact with github we need
           # a github app. The apps values go here.
           # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
-          githubzuulapp:
+          scs-github:
             driver: github
             webhook_token: "{{ webhook_token }}"
             app_id: "{{ github_app_id }}"
@@ -131,9 +150,9 @@
             driver: git
             baseurl: https://opendev.org
 
-        tenants:
+        zuul_tenants:
           - tenant:
-              name: osism-testbed
+              name: scs-dev
               source:
                 opendevorg:
                   # just a repo to include some jobs definitions
@@ -141,17 +160,13 @@
                     - zuul/zuul-jobs:
                         include:
                           - job
-                githubzuulapp:
-                  # config repository
+                scs-github:
                   config-projects:
-                    - master-caster/zuul-config:
+                    - SovereignCloudStack/zuul-config:
                         load-branch: main
-                  # repo to do CI/CD on
-                  untrusted-projects:
-                    - master-caster/apimon-tests
 
         # nodepool labels configuration
-        nodepool_labels:
+        zuul_nodepool_labels:
           labels:
             - name: ubuntu-jammy
               min-ready: 1
@@ -159,7 +174,7 @@
 
         # nodepool providers configuration containing the openstack part
         # and the DIB (disk image builder)
-        nodepool_providers:
+        zuul_nodepool_providers:
           elements-dir: /srv/nodepool/elements
           diskimages:
             - name: base
@@ -200,10 +215,10 @@
                 DIB_RELEASE: jammy
 
           providers:
-            - name: wavestack
+            - name: gx-scs
               driver: openstack
-              cloud: wavestack
-              region-name: "MUC5"
+              cloud: gx-scs
+              region-name: "scs1"
               rate: 1.0
               boot-timeout: 120
               launch-retries: 3
@@ -219,7 +234,7 @@
                     - zuul_secgroup
                   labels:
                     - name: ubuntu-jammy
-                      flavor-name: SCS-2V:8:20
+                      flavor-name: SCS-2V-8-20
                       diskimage: ubuntu-jammy
                       console-log: True
                       key-name: nodepool

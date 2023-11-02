@@ -1,10 +1,10 @@
 # define terraform provider
 terraform {
-  required_version = ">= 1.3.7"
+  required_version = ">= 1.3.7 <1.6.0"
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
-      version = "~> 1.49.0"
+      version = "~> 1.53.0"
     }
   }
 }

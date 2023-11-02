@@ -4,3 +4,4 @@ lib/
 pyvenv.cfg
 *clouds.yaml
 zuul-config.yaml
+terraform/gx-scs/.terraform
