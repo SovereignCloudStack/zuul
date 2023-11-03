@@ -16,7 +16,7 @@ variable "router_id" {
   type        = string
   description = "router the zuul network should be attached to"
   nullable    = false
-  default     = ""
+  default     = "96d4e5a0-4424-4dd5-8dac-ad8231b634f1"
 }
 
 variable "zuul_security_group" {
@@ -30,7 +30,7 @@ variable "zuul_instance_image_id" {
   type        = string
   description = "image id used for the zuul instance"
   nullable    = false
-  default     = "f7aff0ef-5b69-42c1-844d-56f57db1e44b"
+  default     = "a4a2cddf-6577-4e0c-b8e1-70ac584927df"
 }
 
 variable "zuul_flavor_name" {
