@@ -10,6 +10,7 @@
         size: 4096
         state: present
 
+<<<<<<< HEAD
 # - name: Pull caddy docker container
 #   hosts: zuul
 #   become: true
@@ -65,17 +66,48 @@
     - ssh_keys.results
     - add_ssh_keys_from_github
 
+=======
+>>>>>>> additonal-python
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
   hosts: zuul
   vars_files:
     - ./zuul-config.yaml
   pre_tasks:
+    - name: Ensure docker-compose is available
+      become: true
+      ansible.builtin.apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Ensure certbot is available
+      become: true
+      ansible.builtin.apt:
+        name: certbot
+        state: present
+
+    - name: Install docker python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker
+
+    - name: Install docker-compose python libraries
+      become: true
+      ansible.builtin.pip:
+        name: docker-compose
+
     - name: install openstacksdk python libraries
       become: true
       ansible.builtin.pip:
         name: openstacksdk
         version: 2.0.0
+
+    - name: Create self-signed certificate, if configured.
+      command: >
+        openssl req -x509 -nodes -subj '/CN=zuul' -days 365
+        -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
+        creates=/tmp/zuul.cert
 
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
@@ -96,6 +128,10 @@
         group: zuul
         mode: "0640"
       become: true
+
+    # TODO Add user + group zuul 
+    # erstellen /srv/nodepool/elements
+    # certbot install
 
     - name: Upload previously created key to cloud
       openstack.cloud.keypair:
@@ -125,16 +161,25 @@
         mode: "0644"
       become: true
 
-    - name: Install docker python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker
-
-    - name: Install docker-compose python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker-compose
   roles:
+    # use certbot rule to utilize initial cert creation
+    - name: Install and configure certbot
+      role: geerlingguy.certbot
+      become: true
+      vars:
+        certbot_install_method: package
+        certbot_auto_renew: false
+        certbot_create_if_missing: true
+        certbot_create_method: standalone
+        certbot_testmode: true
+        certbot_admin_email: "{{ lets_encrypt_email }}"
+        certbot_certs:
+          - domains:
+              - "{{ zuul_webserver_fqdn }}"
+              - "{{ zuul_logserver_fqdn }}"
+        certbot_create_standalone_stop_services:
+          - docker
+
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
       role: osism.services.zuul
@@ -169,7 +214,8 @@
 
         zuul_tenants:
           - tenant:
-              name: scs-dev
+              name: SCS
+              exclude-unprotected-branches: true
               source:
                 opendevorg:
                   # just a repo to include some jobs definitions
@@ -186,7 +232,7 @@
         zuul_nodepool_labels:
           labels:
             - name: ubuntu-jammy
-              min-ready: 1
+              min-ready: 2
 
 
         # nodepool providers configuration containing the openstack part
@@ -200,10 +246,8 @@
                 - vm
                 - block-device-efi
                 - growroot
-                - openssh-server
                 - enable-serial-console
                 - cloud-init
-                - package-installs
                 - pkg-map
                 - infra-package-needs
                 - zuul-worker
