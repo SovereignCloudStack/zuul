@@ -42,6 +42,29 @@
 #         volumes:
 #           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
 
+# Setup SSH Keys
+- name: Get SSH Keys for Zuul Admins from GitHub
+  ansible.builtin.uri:
+    url: "https://github.com/{{ item }}.keys"
+    return_content: true
+  register: ssh_keys
+  with_items: {{ add_ssh_keys_from_github }} 
+
+- name: Prepare Authorized Keys File
+  ansible.builtin.lineinfile:
+    path: ~/.ssh/authorized_keys
+    line: '# {{ item }}'
+  with_items: add_ssh_keys_from_github
+
+- name: add SSH keys to ~/.ssh/authorized_keys
+  ansible.builtin.lineinfile:
+    path: ~/.ssh/authorized_keys
+    line: "{{ item.0.content }}"
+    insertafter: {{ item.1 }}
+  with_together:
+    - ssh_keys.results
+    - add_ssh_keys_from_github
+
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
   hosts: zuul
@@ -121,12 +144,6 @@
         # zuul_webserver_admin: "admin@example.org"
         # zuul_zookeeper_fqdn: "zookeeper01.example.org"
 
-        zuul_log_server_tag: "alpine"
-        zuul_mariadb_tag: "10.6"
-        zuul_nodepool_tag: "9.0.0"
-        zuul_zookeeper_tag: "3.7.1"
-        zuul_zuul_tag: "9.1.0"
-
         zuul_auth_secret: {{ vault_zuul_auth_secret }}
 
         zuul_database:
@@ -141,9 +158,9 @@
           # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
           scs-github:
             driver: github
-            webhook_token: "{{ webhook_token }}"
-            app_id: "{{ github_app_id }}"
-            app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
+            webhook_token: "{{ vault_github_webhook_token }}"
+            app_id: "{{ vault_github_app_id }}"
+            app_key: "{{ vault_github_app_key }}"
           # we include public job definitions here  
           opendevorg:
             name: opendev
@@ -217,7 +234,7 @@
           providers:
             - name: gx-scs
               driver: openstack
-              cloud: gx-scs
+              cloud: gx-scs_zuul-svc
               region-name: "scs1"
               rate: 1.0
               boot-timeout: 120
