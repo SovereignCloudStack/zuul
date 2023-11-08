@@ -1,11 +1,17 @@
 ---
 
-zuul_tag: 8.2.0
-zuul_zookeeper_tag: 3.8.1
-zuul_webserver_fqdn: 'example.zuul.org'
-zuul_logserver_fqdn: 'example-log.zuul.org'
-zuul_webserver_admin: 'example@mail.org'
-webhook_token: SOMETOKEN
-github_pem_name: my-zuul-app-private-key
-github_app_id: my-id
+# Secret Values in group_vars/zuul/zuul_vault.yaml
 
+zuul_log_server_tag: "alpine"
+zuul_mariadb_tag: "11.1"
+zuul_zuul_tag: "9.2.0"
+zuul_nodepool_tag: "9.0.0"
+zuul_zookeeper_tag: "3.7.2"
+
+add_ssh_keys_from_github:
+- o-otte
+- master-caster
+- joshmue
+- scoopex
+- fkr
+- matofeder
