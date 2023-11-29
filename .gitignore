@@ -6,3 +6,5 @@ pyvenv.cfg
 zuul-config.yaml
 terraform/gx-scs/.terraform
 ansible/.vault-password
+ansible/pem-files/*
+ansible/files/*

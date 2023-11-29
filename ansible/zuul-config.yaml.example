@@ -8,6 +8,10 @@ zuul_zuul_tag: "9.2.0"
 zuul_nodepool_tag: "9.0.0"
 zuul_zookeeper_tag: "3.7.2"
 
+zuul_webserver_fqdn: "zuul.scs.community"
+zuul_logserver_fqdn: "logs.scs.community"
+zuul_webserver_admin_mail: ""
+
 add_ssh_keys_from_github:
 - o-otte
 - master-caster
@@ -15,3 +19,5 @@ add_ssh_keys_from_github:
 - scoopex
 - fkr
 - matofeder
+
+lets_encrypt_email: ""
