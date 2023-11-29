@@ -1,302 +1,340 @@
 ---
-# create key pair if not provided
-# will be used for SSH access in cloud VMs
-- name: Generate SSH key for nodepool
-  hosts: localhost
-  tasks:
-    - community.crypto.openssh_keypair:
-        path: "{{ playbook_dir }}/zuul-nodepool"
-        type: rsa
-        size: 4096
-        state: present
-
-<<<<<<< HEAD
-# - name: Pull caddy docker container
-#   hosts: zuul
-#   become: true
-#   pre_tasks:
-#     - name: Creates directory
-#       file:
-#         path: /opt/caddy
-#         state: directory
-#     - name: Copy file with owner and permissions
-#       ansible.builtin.copy:
-#         src: Caddyfile
-#         dest: /opt/caddy/Caddyfile
-#         owner: root
-#         group: root
-#         mode: '0644'
+# # create key pair if not provided
+# # will be used for SSH access in cloud VMs
+# - name: Generate SSH key for nodepool
+#   hosts: localhost
+#   connection: local
+#   become: false
+#   gather_facts: false
 #   tasks:
-#     - docker_image:
-#         name: "caddy"
-#         source: pull
+#     - name: Create Nodepool SSH Keypair
+#       community.crypto.openssh_keypair:
+#         path: "{{ playbook_dir }}/files/nodepool"
+#         type: rsa
+#         size: 4096
 #         state: present
-#     - docker_container:
-#         name: caddy
-#         image: caddy
-#         state: started
-#         networks:
-#           - name: "zuul_default"
-#         ports:
-#           - "0.0.0.0:80:80/tcp"
-#           - "0.0.0.0:443:443/tcp"
-#         volumes:
-#           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
 
-# Setup SSH Keys
-- name: Get SSH Keys for Zuul Admins from GitHub
-  ansible.builtin.uri:
-    url: "https://github.com/{{ item }}.keys"
-    return_content: true
-  register: ssh_keys
-  with_items: {{ add_ssh_keys_from_github }} 
+# # Setup SSH Keys
+# - name: Deploy Zuul Admin SSH Keys
+#   hosts: zuul
+#   become_user: ubuntu
+#   vars_files:
+#     - ./zuul-config.yaml
+#   tasks:
+#     - name: Get SSH Keys from Github
+#       ansible.builtin.uri:
+#         url: "https://github.com/{{ item }}.keys"
+#         return_content: true
+#       register: ssh_keys
+#       with_items: "{{ add_ssh_keys_from_github }}"
 
-- name: Prepare Authorized Keys File
-  ansible.builtin.lineinfile:
-    path: ~/.ssh/authorized_keys
-    line: '# {{ item }}'
-  with_items: add_ssh_keys_from_github
+#     - name: Prepare Authorized Keys File
+#       ansible.builtin.lineinfile:
+#         path: ~/.ssh/authorized_keys
+#         line: '# {{ item }}'
+#       with_items: "{{ add_ssh_keys_from_github }}"
 
-- name: add SSH keys to ~/.ssh/authorized_keys
-  ansible.builtin.lineinfile:
-    path: ~/.ssh/authorized_keys
-    line: "{{ item.0.content }}"
-    insertafter: {{ item.1 }}
-  with_together:
-    - ssh_keys.results
-    - add_ssh_keys_from_github
+#     - name: Add SSH keys to ~/.ssh/authorized_keys
+#       ansible.builtin.lineinfile:
+#         path: ~/.ssh/authorized_keys
+#         line: "{{ item.0.content }}"
+#         regexp: "{{ item.0.content }}"
+#         insertafter: "{{ item.1 }}"
+#       with_together:
+#         - "{{ ssh_keys.results }}"
+#         - "{{ add_ssh_keys_from_github }}"
 
-=======
->>>>>>> additonal-python
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
   hosts: zuul
   vars_files:
     - ./zuul-config.yaml
-  pre_tasks:
-    - name: Ensure docker-compose is available
-      become: true
-      ansible.builtin.apt:
-        name: docker-compose
-        state: present
-        update_cache: yes
+#   pre_tasks:
+#     - name: Ensure docker-compose is available
+#       become: true
+#       ansible.builtin.apt:
+#         name: docker-compose
+#         state: present
+#         update_cache: true
 
-    - name: Ensure certbot is available
-      become: true
-      ansible.builtin.apt:
-        name: certbot
-        state: present
+#     - name: Ensure python3-pip is available
+#       become: true
+#       ansible.builtin.apt:
+#         name: python3-pip
+#         state: present
+#         update_cache: true
 
-    - name: Install docker python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker
+#     - name: Ensure certbot is available
+#       become: true
+#       ansible.builtin.apt:
+#         name: certbot
+#         state: present
 
-    - name: Install docker-compose python libraries
-      become: true
-      ansible.builtin.pip:
-        name: docker-compose
+#     - name: Install docker python libraries
+#       become: true
+#       ansible.builtin.pip:
+#         name: docker
 
-    - name: install openstacksdk python libraries
-      become: true
-      ansible.builtin.pip:
-        name: openstacksdk
-        version: 2.0.0
+#     - name: Install docker-compose python libraries
+#       become: true
+#       ansible.builtin.pip:
+#         name: docker-compose
 
-    - name: Create self-signed certificate, if configured.
-      command: >
-        openssl req -x509 -nodes -subj '/CN=zuul' -days 365
-        -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
-        creates=/tmp/zuul.cert
+#     - name: Install openstacksdk python libraries
+#       become: true
+#       ansible.builtin.pip:
+#         name: openstacksdk
+#         version: 2.0.0
 
-    # create directory to place your cloud connection information in
-    - name: Create /etc/openstack/
-      ansible.builtin.file:
-        state: directory
-        path: /etc/openstack
-        owner: root
-        group: root
-        mode: 0755
-      become: true
+#     - name: Create self-signed certificate, if configured.
+#       ansible.builtin.command:
+#         cmd: openssl req -x509 -nodes -subj '/CN=zuul' -days 365 -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
+#         creates: /tmp/zuul.cert
 
-    # copy cloud connection information to the right place
-    - name: Deploy clouds.yaml file
-      ansible.builtin.copy:
-        src: clouds.yaml
-        dest: /etc/openstack/clouds.yaml
-        owner: root
-        group: zuul
-        mode: "0640"
-      become: true
+#     # create directory to place your cloud connection information in
+#     - name: Create /etc/openstack/
+#       ansible.builtin.file:
+#         state: directory
+#         path: /etc/openstack
+#         owner: root
+#         group: root
+#         mode: "0755"
+#       become: true
 
-    # TODO Add user + group zuul 
-    # erstellen /srv/nodepool/elements
-    # certbot install
+#     - name: Ensure group "zuul" exists
+#       ansible.builtin.group:
+#         name: zuul
+#         state: present
 
-    - name: Upload previously created key to cloud
-      openstack.cloud.keypair:
-        cloud: gx-scs
-        name: zuul-nodepool
-        public_key: "{{ lookup('file', 'zuul-nodepool.pub') }}"
-      become: true
+#     - name: Ensure the user 'zuul' exists
+#       ansible.builtin.user:
+#         name: zuul
+#         shell: /bin/bash
+#         groups: zuul
+#         append: true
 
-    # get package-installs.yaml in place to provide additional
-    # software configuration for the cloud images
-    - name: Deploy package-installs.yaml file
-      ansible.builtin.copy:
-        src: package-installs.yaml
-        dest: /srv/nodepool/elements/package-installs.yaml
-        owner: root
-        group: zuul
-        mode: "0644"
-      become: true
+#     # copy cloud connection information to the right place
+#     - name: Deploy clouds.yaml file
+#       ansible.builtin.copy:
+#         src: clouds.yaml
+#         dest: /etc/openstack/clouds.yaml
+#         owner: root
+#         group: zuul
+#         mode: "0640"
+#       become: true
 
-    # install recommended elements for zuul purposes
-    - name: Deploy additionals elements used for DIB
-      ansible.builtin.copy:
-        src: elements/
-        dest: /srv/nodepool/elements/
-        owner: root
-        group: zuul
-        mode: "0644"
-      become: true
+#     # TODO Add user + group zuul
+#     # erstellen /srv/nodepool/elements
+#     # certbot install
+
+#     - name: Upload previously created key to cloud
+#       openstack.cloud.keypair:
+#         cloud: gx-scs_zuul
+#         name: zuul-nodepool
+#         public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
+#       become: true
+
+#     - name: Ensure elements directory exists
+#       ansible.builtin.file:
+#         path: /srv/nodepool/elements
+#         state: directory
+#         mode: '0755'
+#         owner: zuul
+#         group: zuul
+
+#     # get package-installs.yaml in place to provide additional
+#     # software configuration for the cloud images
+#     - name: Deploy package-installs.yaml file
+#       ansible.builtin.copy:
+#         src: package-installs.yaml
+#         dest: /srv/nodepool/elements/package-installs.yaml
+#         owner: root
+#         group: zuul
+#         mode: "0644"
+#       become: true
+
+#     # install recommended elements for zuul purposes
+#     - name: Deploy additionals elements used for DIB
+#       ansible.builtin.copy:
+#         src: elements/
+#         dest: /srv/nodepool/elements/
+#         owner: root
+#         group: zuul
+#         mode: "0644"
+#       become: true
 
   roles:
     # use certbot rule to utilize initial cert creation
     - name: Install and configure certbot
       role: geerlingguy.certbot
       become: true
+      vars_files:
+      - ./zuul-config.yaml
       vars:
         certbot_install_method: package
-        certbot_auto_renew: false
+        certbot_auto_renew: true
         certbot_create_if_missing: true
-        certbot_create_method: standalone
-        certbot_testmode: true
-        certbot_admin_email: "{{ lets_encrypt_email }}"
+        certbot_create_method: webroot
+        certbot_testmode: false
+        certbot_admin_email: "{{ zuul_webserver_admin_mail }}"
+        certbot_auto_renew_user: "root"
         certbot_certs:
-          - domains:
+          - webroot: "/opt/zuul/log_server"
+            domains:
               - "{{ zuul_webserver_fqdn }}"
               - "{{ zuul_logserver_fqdn }}"
-        certbot_create_standalone_stop_services:
-          - docker
 
     # use zuul role provided by osism to deploy a basic zuul setup
-    - name: setup zuul role
-      role: osism.services.zuul
-      vars:
-        zuul_logserver_fqdn: "logs.scs.community"
-        zuul_webserver_fqdn: "zuul.scs.community"
-        # zuul_webserver_admin: "admin@example.org"
-        # zuul_zookeeper_fqdn: "zookeeper01.example.org"
+    # - name: setup zuul role
+    #   role: osism.services.zuul
+    #   become: true
+    #   vars:
+    #     zuul_auth_secret: "{{ vault_zuul_auth_secret }}"
 
-        zuul_auth_secret: {{ vault_zuul_auth_secret }}
+    #     zuul_database:
+    #       user_name: "{{ vault_db_user_name }}"
+    #       user_pass: "{{ vault_db_user_pass }}"
+    #       root_pass: "{{ vault_db_root_pass }}"
+    #       db_name: "{{ vault_db_name }}"
 
-        zuul_database:
-          user_name: {{ vault_db_user_name }}
-          user_pass: {{ vault_db_user_pass }}
-          root_pass: {{ vault_db_root_pass }}
-          db_name: {{ vault_db_name }}
+    #     zuul_connections:
+    #       # since we want to interact with github we need
+    #       # a github app. The apps values go here.
+    #       # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
+    #       githubzuulapp:
+    #         driver: github
+    #         webhook_token: "{{ vault_github_webhook_token }}"
+    #         app_id: "{{ vault_github_app_id }}"
+    #         app_key: "{{ vault_github_app_key }}"
+    #       # we include public job definitions here
+    #       opendevorg:
+    #         name: opendev
+    #         driver: git
+    #         baseurl: https://opendev.org
 
-        zuul_connections:
-          # since we want to interact with github we need
-          # a github app. The apps values go here.
-          # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
-          scs-github:
-            driver: github
-            webhook_token: "{{ vault_github_webhook_token }}"
-            app_id: "{{ vault_github_app_id }}"
-            app_key: "{{ vault_github_app_key }}"
-          # we include public job definitions here  
-          opendevorg:
-            name: opendev
-            driver: git
-            baseurl: https://opendev.org
+    #     zuul_tenants:
+    #       - tenant:
+    #           name: SCS
+    #           exclude-unprotected-branches: true
+    #           source:
+    #             opendevorg:
+    #               # just a repo to include some jobs definitions
+    #               untrusted-projects:
+    #                 - zuul/zuul-jobs:
+    #                     include:
+    #                       - job
+    #             githubzuulapp:
+    #               config-projects:
+    #                 - SovereignCloudStack/zuul-config:
+    #                     load-branch: main
+    #               untrusted-projects:
+    #                 - SovereignCloudStack/Design-Docs
+    #                 - SovereignCloudStack/Operational-Docs
+    #                 - SovereignCloudStack/contributor-guide
+    #                 - SovereignCloudStack/docker-horizon
+    #                 - SovereignCloudStack/documentation
+    #                 - SovereignCloudStack/generics
+    #                 - SovereignCloudStack/graphics
+    #                 - SovereignCloudStack/gx-scs-identity-provider
+    #                 - SovereignCloudStack/infrastructure
+    #                 - SovereignCloudStack/issues
+    #                 - SovereignCloudStack/k8s-cassandra
+    #                 - SovereignCloudStack/k8s-cluster-api-provider
+    #                 - SovereignCloudStack/k8s-cortex
+    #                 - SovereignCloudStack/k8s-gatekeeper
+    #                 - SovereignCloudStack/k8s-grafana
+    #                 - SovereignCloudStack/k8s-harbor
+    #                 - SovereignCloudStack/k8s-harbor-manual
+    #                 - SovereignCloudStack/k8s-minio
+    #                 - SovereignCloudStack/k8s-open-policy-agent
+    #                 - SovereignCloudStack/k8s-operator-scylla
+    #                 - SovereignCloudStack/k8s-os-health-monitor
+    #                 - SovereignCloudStack/k8s-prometheus
+    #                 - SovereignCloudStack/k8s-template
+    #                 - SovereignCloudStack/openstack-flavor-manager
+    #                 - SovereignCloudStack/openstack-health-monitor
+    #                 - SovereignCloudStack/openstack-vyos-image
+    #                 - SovereignCloudStack/poc-gardener
+    #                 - SovereignCloudStack/poc-kubermatic
+    #                 - SovereignCloudStack/poc-rancher
+    #                 - SovereignCloudStack/testbed-gx-iam
+    #                 - SovereignCloudStack/testbed-gx-k8s
+    #                 - SovereignCloudStack/testbed-gx-scs
+    #                 - SovereignCloudStack/website
+    #                 - SovereignCloudStack/zuul_deployment
+    #                 - SovereignCloudStack/status-page-api
+    #                 - SovereignCloudStack/standards
+    #                 - SovereignCloudStack/container-images
 
-        zuul_tenants:
-          - tenant:
-              name: SCS
-              exclude-unprotected-branches: true
-              source:
-                opendevorg:
-                  # just a repo to include some jobs definitions
-                  untrusted-projects:
-                    - zuul/zuul-jobs:
-                        include:
-                          - job
-                scs-github:
-                  config-projects:
-                    - SovereignCloudStack/zuul-config:
-                        load-branch: main
-
-        # nodepool labels configuration
-        zuul_nodepool_labels:
-          labels:
-            - name: ubuntu-jammy
-              min-ready: 2
+    #     # nodepool labels configuration
+    #     zuul_nodepool_labels:
+    #       labels:
+    #         - name: ubuntu-jammy
+    #           min-ready: 2
 
 
-        # nodepool providers configuration containing the openstack part
-        # and the DIB (disk image builder)
-        zuul_nodepool_providers:
-          elements-dir: /srv/nodepool/elements
-          diskimages:
-            - name: base
-              abstract: True
-              elements:
-                - vm
-                - block-device-efi
-                - growroot
-                - enable-serial-console
-                - cloud-init
-                - pkg-map
-                - infra-package-needs
-                - zuul-worker
-              formats:
-                - qcow2
-              env-vars:
-                TMPDIR: /srv/dib_tmp
-                DIB_CHECKSUM: "1"
-                DIB_IMAGE_CACHE: /srv/dib_cache
-                DIB_CLOUD_INIT_DATASOURCES: OpenStack
+    #     # nodepool providers configuration containing the openstack part
+    #     # and the DIB (disk image builder)
+    #     zuul_nodepool_providers:
+    #       elements-dir: /srv/nodepool/elements
+    #       diskimages:
+    #         - name: base
+    #           abstract: true
+    #           elements:
+    #             - vm
+    #             - block-device-efi
+    #             - growroot
+    #             - enable-serial-console
+    #             - cloud-init
+    #             - pkg-map
+    #             - infra-package-needs
+    #             - zuul-worker
+    #           formats:
+    #             - qcow2
+    #           env-vars:
+    #             TMPDIR: /srv/dib_tmp
+    #             DIB_CHECKSUM: "1"
+    #             DIB_IMAGE_CACHE: /srv/dib_cache
+    #             DIB_CLOUD_INIT_DATASOURCES: OpenStack
 
-            - name: ubuntu-jammy
-              parent: base
-              pause: False
-              rebuild-age: 86400
-              elements:
-                - ubuntu-minimal
-              release: jammy
-              username: ubuntu
-              formats:
-                - qcow2
-              env-vars:
-                DIB_APT_LOCAL_CACHE: "0"
-                DIB_DISABLE_APT_CLEANUP: "1"
-                FS_TYPE: ext3
-                DIB_RELEASE: jammy
+    #         - name: ubuntu-jammy
+    #           parent: base
+    #           pause: false
+    #           rebuild-age: 86400
+    #           elements:
+    #             - ubuntu-minimal
+    #           release: jammy
+    #           username: ubuntu
+    #           formats:
+    #             - qcow2
+    #           env-vars:
+    #             DIB_APT_LOCAL_CACHE: "0"
+    #             DIB_DISABLE_APT_CLEANUP: "1"
+    #             FS_TYPE: ext3
+    #             DIB_RELEASE: jammy
 
-          providers:
-            - name: gx-scs
-              driver: openstack
-              cloud: gx-scs_zuul-svc
-              region-name: "scs1"
-              rate: 1.0
-              boot-timeout: 120
-              launch-retries: 3
-              diskimages:
-                - name: ubuntu-jammy
-                  pause: false
-              pools:
-                - name: main
-                  max-servers: 10
-                  networks:
-                    - zuul_network
-                  security-groups:
-                    - zuul_secgroup
-                  labels:
-                    - name: ubuntu-jammy
-                      flavor-name: SCS-2V-8-20
-                      diskimage: ubuntu-jammy
-                      console-log: True
-                      key-name: nodepool
-      become: true
+    #       providers:
+    #         - name: gx-scs
+    #           driver: openstack
+    #           cloud: gx-scs_zuul
+    #           region-name: "RegionOne"
+    #           rate: 3.0
+    #           boot-timeout: 180
+    #           launch-retries: 3
+    #           diskimages:
+    #             - name: ubuntu-jammy
+    #               pause: false
+    #           pools:
+    #             - name: main
+    #               max-servers: 10
+    #               networks:
+    #                 - zuul_network
+    #               security-groups:
+    #                 - zuul_secgroup
+    #               labels:
+    #                 - name: ubuntu-jammy
+    #                   flavor-name: SCS-2V-8-20
+    #                   diskimage: ubuntu-jammy
+    #                   console-log: true
+    #                   key-name: zuul-nodepool
+      

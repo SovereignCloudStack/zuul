@@ -72,7 +72,16 @@ resource "openstack_compute_instance_v2" "zuul" {
   image_id        = var.zuul_instance_image_id
   flavor_name     = var.zuul_flavor_name
   key_pair        = var.zuul_key_pair
-  security_groups = ["${openstack_networking_secgroup_v2.zuul_secgroup.id}"]
+  security_groups = [openstack_networking_secgroup_v2.zuul_secgroup.id]
+
+  block_device {
+    uuid                  = var.zuul_instance_image_id
+    source_type           = "image"
+    destination_type      = "volume"
+    volume_size           = 100
+    boot_index            = 0
+    delete_on_termination = true
+  }
 
   network {
     name = openstack_networking_network_v2.zuul_network.name
@@ -81,7 +90,7 @@ resource "openstack_compute_instance_v2" "zuul" {
 
 # create an floating IP 
 resource "openstack_networking_floatingip_v2" "fip_1" {
-  pool = "external"
+  pool = "ext01"
 }
 
 # attach floating IP to zuul instance
