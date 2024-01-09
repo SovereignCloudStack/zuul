@@ -305,7 +305,7 @@
                    pause: false
                pools:
                  - name: main
-                   max-servers: 10
+                   max-servers: 4
                    networks:
                      - zuul_network
                    security-groups:
