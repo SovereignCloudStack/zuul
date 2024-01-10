@@ -344,7 +344,7 @@
       </VirtualHost>
 
 # Reload the new httpd.conf configuration
-- name: Reload service httpd, in all cases
+- name: Reload service httpd
   ansible.builtin.service:
     name: httpd
     state: reloaded
