@@ -169,7 +169,7 @@
       role: geerlingguy.certbot
       become: true
       vars_files:
-      - ./zuul-config.yaml
+        - ./zuul-config.yaml
       vars:
         certbot_install_method: package
         certbot_auto_renew: true
@@ -336,35 +336,39 @@
                       diskimage: ubuntu-jammy
                       console-log: true
                       key-name: zuul-nodepool
-      
-# Add a port 80 virtualHost for certbot in httpd.conf
-- name:  Add an HTTP listener on port 80
-  ansible.builtin.lineinfile:
-    path: /opt/zuul/log_server/httpd.conf
-    insertbefore: '^Listen 443'
-    line: Listen 80
 
-- name: Insert virtualHost for LetsEncrypt on port 80
-  ansible.builtin.blockinfile:
-    path: /opt/zuul/log_server/httpd.conf
-    insertbefore: "<VirtualHost _default_:443>"
-    append_newline: true
-    block: |
-      <VirtualHost _default_:80>
-      Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
-      <Directory "/usr/local/apache2/htdocs/.well-known/acme-challenge/">
-        AllowOverride None
-        Options MultiViews SymLinksIfOwnerMatch IncludesNoExec
-        Require method GET POST OPTIONS
-      </Directory>
-      RewriteEngine On
-      RewriteCond %{REQUEST_URI} /\.well\-known/acme\-challenge/
-      RewriteRule (.*) $1 [L,QSA]
-      RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
-      </VirtualHost>
+# Run the zuul role to amend the httpd.conf
+- name: Amend httpd.conf to allow letsencrypt
+  hosts: zuul
+  tasks:
+    # Add a port 80 virtualHost for certbot in httpd.conf
+    - name: Add an HTTP listener on port 80
+      ansible.builtin.lineinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        insertbefore: '^Listen 443'
+        line: Listen 80
 
-# Reload the new httpd.conf configuration
-- name: Reload service httpd
-  ansible.builtin.service:
-    name: httpd
-    state: reloaded
+    - name: Insert virtualHost for LetsEncrypt on port 80
+      ansible.builtin.blockinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        insertbefore: "<VirtualHost _default_:443>"
+        append_newline: true
+        block: |
+          <VirtualHost _default_:80>
+          Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
+          <Directory "/usr/local/apache2/htdocs/.well-known/acme-challenge/">
+            AllowOverride None
+            Options MultiViews SymLinksIfOwnerMatch IncludesNoExec
+            Require method GET POST OPTIONS
+          </Directory>
+          RewriteEngine On
+          RewriteCond %{REQUEST_URI} /\.well\-known/acme\-challenge/
+          RewriteRule (.*) $1 [L,QSA]
+          RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
+          </VirtualHost>
+
+    # Reload the new httpd.conf configuration
+    - name: Reload service httpd
+      ansible.builtin.service:
+        name: httpd
+        state: reloaded
