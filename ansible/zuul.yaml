@@ -34,15 +34,15 @@
         line: '# {{ item }}'
       with_items: "{{ add_ssh_keys_from_github }}"
 
-    - name: Add SSH keys to ~/.ssh/authorized_keys
-      ansible.builtin.lineinfile:
-        path: ~/.ssh/authorized_keys
-        line: "{{ item.0.content }}"
-        regexp: "{{ item.0.content }}"
-        insertafter: "{{ item.1 }}"
-      with_together:
-        - "{{ ssh_keys.results }}"
-        - "{{ add_ssh_keys_from_github }}"
+#    - name: Add SSH keys to ~/.ssh/authorized_keys
+#      ansible.builtin.lineinfile:
+#        path: ~/.ssh/authorized_keys
+#        line: "{{ item.0.content }}"
+#        regexp: "{{ item.0.content }}"
+#        insertafter: "{{ item.1 }}"
+#      with_together:
+#        - "{{ ssh_keys.results }}"
+#        - "{{ add_ssh_keys_from_github }}"
 
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
@@ -347,12 +347,13 @@
         path: /opt/zuul/log_server/httpd.conf
         insertbefore: '^Listen 443'
         line: Listen 80
+      tags:
+        - config-change
 
     - name: Insert virtualHost for LetsEncrypt on port 80
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
         insertbefore: "<VirtualHost _default_:443>"
-        append_newline: true
         block: |
           <VirtualHost _default_:80>
           Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
@@ -366,9 +367,26 @@
           RewriteRule (.*) $1 [L,QSA]
           RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
           </VirtualHost>
+      tags:
+        - config-change
 
-    # Reload the new httpd.conf configuration
-    - name: Reload service httpd
-      ansible.builtin.service:
-        name: httpd
-        state: reloaded
+    # Restart the new container with the new configuration
+    - name: Restart a container
+      community.docker.docker_container:
+        name: zuul_log_server
+        image: index.docker.io/httpd:alpine
+        state: started
+        restart: true
+        links:
+          - "myredis:aliasedredis"
+        devices:
+          - "/opt/zuul/log_server:/usr/local/apache2/conf:ro"
+          - "log_server:/usr/local/apache2/htdocs:z"
+          - "/etc/letsencrypt:/etc/letsencrypt:ro"
+          - "/opt/zuul/log_server/.well-known/acme-challenge/:/usr/local/apache2/htdocs/.well-known/acme-challenge/:rw"
+        ports:
+          - "80:80"
+          - "443:443"
+      tags:
+        - config-change
+        - restart
