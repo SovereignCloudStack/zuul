@@ -337,36 +337,32 @@
                       console-log: true
                       key-name: zuul-nodepool
 
-# Run the zuul role to amend the httpd.conf
+# Manual amendments to the OSISM zuul role for letsencrypt
 - name: Amend httpd.conf to allow letsencrypt
   hosts: zuul
   tasks:
-    # Add a port 80 virtualHost for certbot in httpd.conf
-    - name: Add an HTTP listener on port 80
-      ansible.builtin.lineinfile:
-        path: /opt/zuul/log_server/httpd.conf
-        insertbefore: '^Listen 443'
-        line: Listen 80
-      tags:
-        - config-change
-
-    - name: Insert virtualHost for LetsEncrypt on port 80
+    - name: Insert virtualHost for LetsEncrypt on port 80 part1
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
-        insertbefore: "<VirtualHost _default_:443>"
+        insertafter: "<VirtualHost _default_:80>"
         block: |
-          <VirtualHost _default_:80>
           Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
           <Directory "/usr/local/apache2/htdocs/.well-known/acme-challenge/">
             AllowOverride None
             Options MultiViews SymLinksIfOwnerMatch IncludesNoExec
             Require method GET POST OPTIONS
           </Directory>
-          RewriteEngine On
+      tags:
+        - config-change
+        
+    - name: Insert virtualHost for LetsEncrypt on port 80 part2
+      ansible.builtin.blockinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        insertafer: "RewriteEngine On"
+        firstmatch: true
+        block: |
           RewriteCond %{REQUEST_URI} /\.well\-known/acme\-challenge/
           RewriteRule (.*) $1 [L,QSA]
-          RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
-          </VirtualHost>
       tags:
         - config-change
 
