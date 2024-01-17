@@ -1,0 +1,8 @@
+---
+- name: Setup Exporters
+  hosts: zuul
+  become: true
+  roles:
+    - node-exporter
+    - statsd-exporter
+    - cadvisor

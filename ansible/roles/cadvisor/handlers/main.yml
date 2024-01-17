@@ -1,0 +1,5 @@
+---
+- name: restart cadvisor
+  ansible.builtin.service:
+    name: cadvisor
+    state: restarted
