@@ -1,3 +1,10 @@
+variable "zuul_vm_name" {
+  type        = string
+  description = "Name of the Compute Instance for zuul. Default: zuul"
+  default     = "zuul"
+  nullable    = false
+}
+
 variable "zuul_network_name" {
   type        = string
   description = "The name of the network that is created for zuul deployment"

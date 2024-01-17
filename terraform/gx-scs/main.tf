@@ -11,7 +11,12 @@ terraform {
 
 # Configure the OpenStack Provider, set name of clouds.yaml entry according to your needs
 provider "openstack" {
-  cloud = "gx-scs_zuul"
+  cloud = var.zuul_cloudsyaml_identifier
+}
+
+provider "openstack" {
+  alias = "dev"
+  cloud = var.zuul_cloudsyaml_identifier_dev
 }
 
 resource "openstack_compute_keypair_v2" "inital_ssh_keypair" {
@@ -32,4 +37,24 @@ module "zuul_infrastructure" {
 
 output "floating_ip" {
   value = module.zuul_infrastructure.floating_ip
+}
+
+module "zuul_infrastructure_dev" {
+  providers = {
+    openstack = openstack.dev
+  }
+
+  source                 = "../modules/zuul"
+  zuul_vm_name           = "${var.zuul_vm_name}-dev"
+  zuul_network_name      = var.zuul_network_name
+  zuul_subnet_cidr       = var.zuul_subnet_cidr
+  router_id              = var.router_id_dev
+  zuul_security_group    = var.zuul_security_group
+  zuul_instance_image_id = var.zuul_instance_image_id
+  zuul_flavor_name       = var.zuul_flavor_name_dev
+  zuul_key_pair          = openstack_compute_keypair_v2.inital_ssh_keypair.name
+}
+
+output "floating_ip_dev" {
+  value = module.zuul_infrastructure_dev.floating_ip
 }

@@ -68,7 +68,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_zuul_http" {
 
 # create zuul head node
 resource "openstack_compute_instance_v2" "zuul" {
-  name            = "zuul"
+  name            = var.zuul_vm_name
   image_id        = var.zuul_instance_image_id
   flavor_name     = var.zuul_flavor_name
   key_pair        = var.zuul_key_pair
@@ -85,6 +85,10 @@ resource "openstack_compute_instance_v2" "zuul" {
 
   network {
     name = openstack_networking_network_v2.zuul_network.name
+  }
+
+  lifecycle {
+    ignore_changes = [ image_id, security_groups ]
   }
 }
 
