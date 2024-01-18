@@ -159,7 +159,7 @@
         append: true
 
     # copy cloud connection information to the right place
-    - name: Deploy clouds.yaml file
+    - name: Deploy clouds.yaml file for SCS zuul
       ansible.builtin.copy:
         src: clouds.yaml
         dest: /etc/openstack/clouds.yaml
@@ -167,6 +167,17 @@
         group: zuul
         mode: "0640"
       become: true
+      when: "'zuul.dev' not in inventory_hostname"
+
+    - name: Deploy clouds.yaml file for Gonicus dev zuul
+      ansible.builtin.copy:
+        src: clouds-dev.yaml
+        dest: /etc/openstack/clouds.yaml
+        owner: root
+        group: zuul
+        mode: "0640"
+      become: true
+      when: "'zuul.dev' in inventory_hostname"
 
     # TODO Add user + group zuul
     # erstellen /srv/nodepool/elements
