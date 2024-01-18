@@ -9,16 +9,17 @@
         url: https://bootstrap.pypa.io/get-pip.py
         dest: /tmp/get-pip.py
         mode: '0755'
+      when: "'pip3' not in pip_check.stdout"
 
     - name: Install pip
       ansible.builtin.raw: /usr/bin/python3 /tmp/get-pip.py
-      register: my_output
-      changed_when: my_output.rc != 0
+      when: "'pip3' not in pip_check.stdout"
 
     - name: Clean up get-pip.py
       ansible.builtin.file:
         path: /tmp/get-pip.py
         state: absent
+      when: "'pip3' not in pip_check.stdout"
 
 # create key pair if not provided
 # will be used for SSH access in cloud VMs
