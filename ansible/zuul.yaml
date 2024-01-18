@@ -4,27 +4,12 @@
   become: true
 
   tasks:
-    - name: Check if pip is installed
-      command: "pip3 --version"
-      register: pip_check
-      ignore_errors: true
-
-    - name: Download pip installer
-      ansible.builtin.get_url:
-        url: https://bootstrap.pypa.io/get-pip.py
-        dest: /tmp/get-pip.py
-        mode: '0755'
-      when: "'pip' not in pip_check.stdout"
-
-    - name: Install pip
-      ansible.builtin.raw: /usr/bin/python3 /tmp/get-pip.py
-      when: "'pip' not in pip_check.stdout"
-
-    - name: Clean up get-pip.py
-      ansible.builtin.file:
-        path: /tmp/get-pip.py
-        state: absent
-      when: "'pip' not in pip_check.stdout"
+    - name: Ensure python3-pip is available
+      become: true
+      ansible.builtin.apt:
+        name: python3-pip
+        state: present
+        update_cache: true
 
 # create key pair if not provided
 # will be used for SSH access in cloud VMs
@@ -104,13 +89,6 @@
       become: true
       ansible.builtin.apt:
         name: docker-compose
-        state: present
-        update_cache: true
-
-    - name: Ensure python3-pip is available
-      become: true
-      ansible.builtin.apt:
-        name: python3-pip
         state: present
         update_cache: true
 
