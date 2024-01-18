@@ -1,4 +1,25 @@
 ---
+- name: Install pip using Ansible
+  hosts: zuul.dev
+  become: true  # Run tasks with sudo or become
+
+  tasks:
+    - name: Download pip installer
+      ansible.builtin.get_url:
+        url: https://bootstrap.pypa.io/get-pip.py
+        dest: /tmp/get-pip.py
+        mode: '0755'
+
+    - name: Install pip
+      ansible.builtin.raw: /usr/bin/python3 /tmp/get-pip.py
+      register: my_output
+      changed_when: my_output.rc != 0
+
+    - name: Clean up get-pip.py
+      ansible.builtin.file:
+        path: /tmp/get-pip.py
+        state: absent
+
 # create key pair if not provided
 # will be used for SSH access in cloud VMs
 - name: Generate SSH key for nodepool
