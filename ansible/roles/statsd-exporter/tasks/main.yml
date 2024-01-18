@@ -3,8 +3,7 @@
   ansible.builtin.stat:
     path: /usr/local/bin/statsd_exporter
     checksum_algorithm: sha256
-    get_md5: no
-  check_mode: no
+  check_mode: true
   changed_when: false
   failed_when: false
   register: statsd_exporter_binary
@@ -19,8 +18,8 @@
     group: root
     owner: root
     mode: "u=rwx,g=rx,o=rx"
-    remote_src: yes
-    src: "{{ node_exporter_dist }}"
+    remote_src: true
+    src: "{{ statsd_exporter_dist }}"
   when: statsd_exporter_binary.stat.checksum is not defined or statsd_exporter_binary.stat.checksum != statsd_exporter_sha256
 
 - name: Ensure prometheus-statsd-exporter systemd service exists
@@ -28,15 +27,16 @@
     src: prometheus-statsd-exporter.service
     dest: /etc/systemd/system/prometheus-statsd-exporter.service
   register: statsd_exporter_systemd
-  notify: restart prometheus-statsd-exporter
+  notify: Restart prometheus-statsd-exporter
 
 - name: Reload systemd
-  ansible.builtin.command: /bin/systemctl daemon-reload
+  ansible.builtin.systemd_service:
+    daemon_reload: true
   when: statsd_exporter_systemd.changed
 
 - name: Ensure prometheus-statsd-exporter is enabled and started
   ansible.builtin.service: 
     name: prometheus-statsd-exporter
-    enabled: yes
+    enabled: true
     state: started
     use: service

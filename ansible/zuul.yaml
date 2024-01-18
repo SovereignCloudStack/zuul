@@ -244,6 +244,7 @@
                   config-projects:
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
+                  untrusted-projects: "{{ untrusted_projects }}"
 
         # nodepool labels configuration
         zuul_nodepool_labels:

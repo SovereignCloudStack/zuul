@@ -4,9 +4,7 @@ Description=Prometheus exporter for statsd metrics
 [Service]
 Restart=always
 User=nobody
-ExecStart=/usr/local/bin/node_exporter \
-    --collector.filesystem.ignored-fs-types="^(sys|proc|auto|au|ns)fs$"
-ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/usr/local/bin/statsd_exporterExecReload=/bin/kill -HUP $MAINPID
 TimeoutStopSec=20s
 SendSIGKILL=no
 

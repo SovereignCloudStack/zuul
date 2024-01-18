@@ -5,8 +5,7 @@
   ansible.builtin.stat:
     path: /usr/local/bin/cadvisor
     checksum_algorithm: sha256
-    get_md5: no
-  check_mode: no
+  check_mode: false
   changed_when: false
   failed_when: false
   register: cadvisor_binary
@@ -25,16 +24,18 @@
   ansible.builtin.copy:
     src: cadvisor.service
     dest: /etc/systemd/system/cadvisor.service
+    mode: u=rwx,g=rx,o=rx
   register: cadvisor_systemd
   notify: restart cadvisor
 
 - name: Reload systemd
-  ansible.builtin.command: /bin/systemctl daemon-reload
+  ansible.builtin.systemd_service:
+    daemon_reload: true
   when: cadvisor_systemd.changed
 
 - name: Ensure cadvisor is enabled and started
   ansible.builtin.service:
     name: cadvisor
-    enabled: yes
+    enabled: true
     state: started
     use: service
