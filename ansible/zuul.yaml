@@ -1,7 +1,7 @@
 ---
 - name: Install pip using Ansible
-  hosts: zuul.dev
-  become: true  # Run tasks with sudo or become
+  hosts: zuul
+  become: true
 
   tasks:
     - name: Download pip installer
