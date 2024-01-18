@@ -245,6 +245,7 @@
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
                   untrusted-projects: "{{ untrusted_projects }}"
+                  when: "'zuul.dev' not in inventory_hostname"
 
         # nodepool labels configuration
         zuul_nodepool_labels:
