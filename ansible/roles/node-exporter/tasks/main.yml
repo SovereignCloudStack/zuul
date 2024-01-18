@@ -28,10 +28,11 @@
     src: prometheus-node-exporter.service
     dest: /etc/systemd/system/prometheus-node-exporter.service
   register: node_exporter_systemd
-  notify: restart prometheus-node-exporter
+  notify: Restart prometheus-node-exporter
 
 - name: Reload systemd
-  ansible.builtin.command: /bin/systemctl daemon-reload
+  ansible.builtin.systemd_service:
+    daemon_reload: true
   when: node_exporter_systemd.changed
 
 - name: Ensure prometheus-node-exporter is enabled and started
