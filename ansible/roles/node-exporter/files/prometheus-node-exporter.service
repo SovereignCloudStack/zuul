@@ -4,8 +4,7 @@ Description=Prometheus exporter for machine metrics
 [Service]
 Restart=always
 User=nobody
-ExecStart=/usr/local/bin/node_exporter \
-    --collector.filesystem.ignored-fs-types="^(sys|proc|auto|au|ns)fs$"
+ExecStart=/usr/local/bin/node_exporter
 ExecReload=/bin/kill -HUP $MAINPID
 TimeoutStopSec=20s
 SendSIGKILL=no
