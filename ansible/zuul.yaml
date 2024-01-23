@@ -342,8 +342,6 @@
         image: index.docker.io/httpd:alpine
         state: started
         restart: true
-        links:
-          - "myredis:aliasedredis"
         devices:
           - "/opt/zuul/log_server:/usr/local/apache2/conf:ro"
           - "log_server:/usr/local/apache2/htdocs:z"
