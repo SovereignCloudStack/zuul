@@ -8,10 +8,12 @@ zuul_zuul_tag: "9.2.0"
 zuul_nodepool_tag: "9.0.0"
 zuul_zookeeper_tag: "3.7.2"
 
-zuul_webserver_fqdn: "zuul.scs.community"
-zuul_logserver_fqdn: "zuul-logs.scs.community"
+zuul_webserver_fqdn: "{{ prod_zuul_webserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_webserver_fqdn }}"
+zuul_logserver_fqdn: "{{ prod_zuul_logserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_logserver_fqdn }}"
 dev_zuul_webserver_fqdn: "zuul-dev.scs.community"
 dev_zuul_logserver_fqdn: "zuul-logs-dev.scs.community"
+prod_zuul_webserver_fqdn: "zuul.scs.community"
+prod_zuul_logserver_fqdn: "zuul-logs.scs.community"
 zuul_webserver_admin_mail: "oliver.kautz@gonicus.de"
 
 add_ssh_keys_from_github:

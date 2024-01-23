@@ -198,26 +198,6 @@
       become: true
 
   roles:
-    # use certbot rule to utilize initial cert creation
-    - name: Install and configure certbot
-      role: geerlingguy.certbot
-      become: true
-      vars_files:
-        - ./zuul-config.yaml
-      vars:
-        certbot_install_method: package
-        certbot_auto_renew: true
-        certbot_create_if_missing: true
-        certbot_create_method: webroot
-        certbot_testmode: false
-        certbot_admin_email: "{{ zuul_webserver_admin_mail }}"
-        certbot_auto_renew_user: "root"
-        certbot_certs:
-          - webroot: "/opt/zuul/log_server"
-            domains:
-              - "{{ zuul_webserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_webserver_fqdn }}"
-              - "{{ zuul_logserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_logserver_fqdn }}"
-
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
       role: osism.services.zuul
@@ -260,8 +240,8 @@
                   config-projects:
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
-                  untrusted-projects: "{{ untrusted_projects }}"
-                  when: "'zuul.dev' not in inventory_hostname"
+                  untrusted-projects: "{{ untrusted_projects if ('zuul.dev' not in inventory_hostname) }}"
+
 
         # nodepool labels configuration
         zuul_nodepool_labels:
@@ -338,7 +318,7 @@
 # Manual amendments to the OSISM zuul role for letsencrypt
 - name: Amend httpd.conf to allow letsencrypt
   hosts: zuul
-  tasks:
+  pre_tasks:
     - name: Insert virtualHost for LetsEncrypt on port 80 part1
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
@@ -383,3 +363,24 @@
       tags:
         - config-change
         - restart
+
+  roles:
+    # use certbot rule to utilize initial cert creation
+    - name: Install and configure certbot
+      role: geerlingguy.certbot
+      become: true
+      vars_files:
+        - ./zuul-config.yaml
+      vars:
+        certbot_install_method: package
+        certbot_auto_renew: true
+        certbot_create_if_missing: true
+        certbot_create_method: webroot
+        certbot_testmode: false
+        certbot_admin_email: "{{ zuul_webserver_admin_mail }}"
+        certbot_auto_renew_user: "root"
+        certbot_certs:
+          - webroot: "/opt/zuul/log_server"
+            domains:
+              - "{{ zuul_webserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_webserver_fqdn }}"
+              - "{{ zuul_logserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_logserver_fqdn }}"
