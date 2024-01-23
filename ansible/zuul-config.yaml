@@ -1,0 +1,64 @@
+---
+
+# Secret Values in group_vars/zuul/zuul_vault.yaml
+
+zuul_log_server_tag: "alpine"
+zuul_mariadb_tag: "11.1"
+zuul_zuul_tag: "9.2.0"
+zuul_nodepool_tag: "9.0.0"
+zuul_zookeeper_tag: "3.7.2"
+
+zuul_webserver_fqdn: "zuul.scs.community"
+zuul_logserver_fqdn: "zuul-logs.scs.community"
+dev_zuul_webserver_fqdn: "zuul-dev.scs.community"
+dev_zuul_logserver_fqdn: "zuul-logs-dev.scs.community"
+zuul_webserver_admin_mail: "oliver.kautz@gonicus.de"
+
+add_ssh_keys_from_github:
+- o-otte
+- master-caster
+- joshmue
+- scoopex
+- fkr
+- pixelphantomx
+- matofeder
+
+
+untrusted_projects:
+- SovereignCloudStack/Design-Docs
+- SovereignCloudStack/Operational-Docs
+- SovereignCloudStack/contributor-guide
+- SovereignCloudStack/docker-horizon
+- SovereignCloudStack/documentation
+- SovereignCloudStack/generics
+- SovereignCloudStack/graphics
+- SovereignCloudStack/gx-scs-identity-provider
+- SovereignCloudStack/infrastructure
+- SovereignCloudStack/issues
+- SovereignCloudStack/k8s-cassandra
+- SovereignCloudStack/k8s-cluster-api-provider
+- SovereignCloudStack/k8s-cortex
+- SovereignCloudStack/k8s-gatekeeper
+- SovereignCloudStack/k8s-grafana
+- SovereignCloudStack/k8s-harbor
+- SovereignCloudStack/k8s-harbor-manual
+- SovereignCloudStack/k8s-minio
+- SovereignCloudStack/k8s-open-policy-agent
+- SovereignCloudStack/k8s-operator-scylla
+- SovereignCloudStack/k8s-os-health-monitor
+- SovereignCloudStack/k8s-prometheus
+- SovereignCloudStack/k8s-template
+- SovereignCloudStack/openstack-flavor-manager
+- SovereignCloudStack/openstack-health-monitor
+- SovereignCloudStack/openstack-vyos-image
+- SovereignCloudStack/poc-gardener
+- SovereignCloudStack/poc-kubermatic
+- SovereignCloudStack/poc-rancher
+- SovereignCloudStack/testbed-gx-iam
+- SovereignCloudStack/testbed-gx-k8s
+- SovereignCloudStack/testbed-gx-scs
+- SovereignCloudStack/website
+- SovereignCloudStack/zuul_deployment
+- SovereignCloudStack/status-page-api
+- SovereignCloudStack/standards
+- SovereignCloudStack/container-images
