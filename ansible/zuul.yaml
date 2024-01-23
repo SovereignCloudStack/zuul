@@ -215,8 +215,8 @@
         certbot_certs:
           - webroot: "/opt/zuul/log_server"
             domains:
-              - "{{ 'zuul_webserver_fqdn' if ('zuul.dev' not in inventory_hostname) else 'dev_zuul_webserver_fqdn' }}"
-              - "{{ 'zuul_logserver_fqdn' if ('zuul.dev' not in inventory_hostname) else 'dev_zuul_logserver_fqdn' }}"
+              - "{{ zuul_webserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_webserver_fqdn }}"
+              - "{{ zuul_logserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_logserver_fqdn }}"
 
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
