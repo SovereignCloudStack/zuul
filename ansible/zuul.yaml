@@ -312,14 +312,6 @@
             Options MultiViews SymLinksIfOwnerMatch IncludesNoExec
             Require method GET POST OPTIONS
           </Directory>
-      tags:
-        - config-change
-
-    - name: Insert virtualHost for LetsEncrypt on port 80 part2
-      ansible.builtin.blockinfile:
-        path: /opt/zuul/log_server/httpd.conf
-        insertbefore: "RewriteRule ^/?*"
-        block: |
           RewriteCond %{REQUEST_URI} /\.well\-known/acme\-challenge/
           RewriteRule (.*) $1 [L,QSA]
       tags:
