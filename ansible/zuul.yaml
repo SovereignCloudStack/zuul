@@ -318,22 +318,18 @@
         - config-change
 
     # Restart the new container with the new configuration
-    - name: Restart a container
+    - name: Restart the zuul_log_server container
       community.docker.docker_container:
         name: zuul_log_server
-        image: index.docker.io/httpd:alpine
-        state: started
-        restart: true
-        devices:
-          - "/opt/zuul/log_server:/usr/local/apache2/conf:ro"
-          - "log_server:/usr/local/apache2/htdocs:z"
-          - "/etc/letsencrypt:/etc/letsencrypt:ro"
-          - "/opt/zuul/log_server/.well-known/acme-challenge/:/usr/local/apache2/htdocs/.well-known/acme-challenge/:rw"
-        ports:
-          - "80:80"
-          - "443:443"
+        state: stopped
       tags:
-        - config-change
+        - restart
+
+    - name: Restart the zuul_log_server container
+      community.docker.docker_container:
+        name: zuul_log_server
+        state: started
+      tags:
         - restart
 
   roles:
@@ -354,5 +350,5 @@
         certbot_certs:
           - webroot: "/opt/zuul/log_server"
             domains:
-              - "{{ zuul_webserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_webserver_fqdn }}"
-              - "{{ zuul_logserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_logserver_fqdn }}"
+              - "{{ zuul_webserver_fqdn }}"
+              - "{{ zuul_logserver_fqdn }}"
