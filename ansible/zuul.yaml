@@ -30,8 +30,6 @@
 - name: Deploy Zuul Admin SSH Keys
   hosts: zuul
   become_user: ubuntu
-  vars_files:
-    - ./zuul-config.yaml
   tasks:
     - name: Get SSH Keys from Github
       ansible.builtin.uri:
@@ -59,8 +57,6 @@
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
   hosts: zuul
-  vars_files:
-    - ./zuul-config.yaml
   pre_tasks:
     - name: Ensure docker-compose is available
       become: true
@@ -301,7 +297,25 @@
 - name: Amend httpd.conf to allow letsencrypt
   hosts: zuul
   pre_tasks:
-    - name: Insert virtualHost for LetsEncrypt on port 80 part1
+    - name: Insert virtualHost for LetsEncrypt on port 80 part2
+      ansible.builtin.blockinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        insertafter: "^SSLCertificateFile"
+        block: |
+          SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
+          SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
+      tags:
+        - config-change
+
+    - name: Remove the unused SSLCertificateFile entry
+      ansible.builtin.lineinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        state: absent
+        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
+      tags:
+        - config-change
+
+    - name: Insert virtualHost for LetsEncrypt on port 80
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
         insertafter: "<VirtualHost _default_:80>"
@@ -337,8 +351,6 @@
     - name: Install and configure certbot
       role: geerlingguy.certbot
       become: true
-      vars_files:
-        - ./zuul-config.yaml
       vars:
         certbot_install_method: package
         certbot_auto_renew: true
@@ -352,3 +364,5 @@
             domains:
               - "{{ zuul_webserver_fqdn }}"
               - "{{ zuul_logserver_fqdn }}"
+      tags:
+        - certbot
