@@ -320,7 +320,8 @@
     - name: Insert virtualHost for LetsEncrypt on port 80 part2
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
-        insertafter: "^SSLCertificateFile"
+        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
+        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.crt\""
         block: |
           SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
           SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
@@ -338,7 +339,8 @@
     - name: Insert virtualHost for LetsEncrypt on port 80
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
-        insertafter: "<VirtualHost _default_:80>"
+        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK letsencrypt -->"
+        insertafter: "^<VirtualHost _default_:80>"
         block: |
           Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
           <Directory "/usr/local/apache2/htdocs/.well-known/acme-challenge/">
