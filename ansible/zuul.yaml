@@ -203,6 +203,17 @@
             name: opendev
             driver: git
             baseurl: https://opendev.org
+          # To view Zuul reports in the Matrix chat, we must use Zuul MQTT reports.
+          # Since the direct path from MQTT to Matrix is unsupported,
+          # we send MQTT reports through the zuul-mqtt-matrix-bridge,
+          # which acts as a relay, transferring MQTT reports from Zuul to the Matrix chat.
+          mqtt:
+            name: mqtt
+            driver: mqtt
+            server: "{{ vault_mqtt_server }}"
+            port: "{{ vault_mqtt_port }}"
+            user: "{{ vault_mqtt_user }}"
+            password: "{{ vault_mqtt_password }}"
 
         zuul_tenants:
           - tenant:
