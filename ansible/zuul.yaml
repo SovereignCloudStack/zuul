@@ -300,12 +300,13 @@
     - name: Insert virtualHost for LetsEncrypt on port 80 part2
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
-        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
+        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
         insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.crt\""
         block: |
           SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
           SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
       tags:
+        - httpd-config-change
         - config-change
 
     - name: Remove the unused SSLCertificateFile entry
@@ -314,12 +315,13 @@
         state: absent
         regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
       tags:
+        - httpd-config-change
         - config-change
 
     - name: Insert virtualHost for LetsEncrypt on port 80
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
-        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK letsencrypt -->"
+        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK letsencrypt -->"
         insertafter: "^<VirtualHost _default_:80>"
         block: |
           Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
@@ -331,22 +333,48 @@
           RewriteCond %{REQUEST_URI} /\.well\-known/acme\-challenge/
           RewriteRule (.*) $1 [L,QSA]
       tags:
+        - httpd-config-change
         - config-change
 
-    # Restart the new container with the new configuration
-    - name: Restart the zuul_log_server container
-      community.docker.docker_container:
-        name: zuul_log_server
-        state: stopped
+    - name: Insert letsencrypt volumes into the docker-compose file
+      ansible.builtin.blockinfile:
+        path: /opt/zuul/docker-compose.yaml
+        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK letsencrypt volumes -->"
+        insertafter: "log_server:\/usr\/local\/apache2\/htdocs:z"
+        block: |
+          {% filter indent(width=6, first=true) %}
+          - "/etc/letsencrypt:/etc/letsencrypt:ro"
+          - "/opt/zuul/log_server/.well-known/acme-challenge/:/usr/local/apache2/htdocs/.well-known/acme-challenge/:rw"
+          {% endfilter %}
       tags:
-        - restart
+        - compose-config-change
+        - config-change
 
-    - name: Restart the zuul_log_server container
-      community.docker.docker_container:
-        name: zuul_log_server
-        state: started
+    - name: Insert restart policy into the docker-compose file
+      ansible.builtin.blockinfile:
+        path: /opt/zuul/docker-compose.yaml
+        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK restart policy -->"
+        insertafter: "container_name: \"zuul_log_server\""
+        block: |
+          {% filter indent(width=4, first=true) %}
+          restart: unless-stopped
+          {% endfilter %}
       tags:
-        - restart
+        - compose-config-change
+        - config-change
+
+# TODO:
+#
+# Add the missing server certs and rename the server accordingly.
+
+    # Restart the new container with the new configuration
+#    - name: Restart log_server with docker-compose
+#      ansible.builtin.command: /usr/bin/docker-compose restart log_server
+#      args:
+#        chdir: /opt/zuul
+#      tags:
+#        - restart
+#        - config-change
 
   roles:
     # use certbot rule to utilize initial cert creation
