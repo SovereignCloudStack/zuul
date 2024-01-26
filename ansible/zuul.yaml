@@ -89,7 +89,7 @@
 
     - name: Create self-signed certificate, if configured.
       ansible.builtin.command:
-        cmd: openssl req -x509 -nodes -subj '/CN=zuul' -days 365 -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
+        cmd: openssl req -x509 -nodes -subj '/CN={{ zuul_cn_name }}' -days 365 -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
         creates: /tmp/zuul.cert
 
     # create directory to place your cloud connection information in
@@ -305,29 +305,35 @@
                       key-name: zuul-nodepool
 
 # Manual amendments to the OSISM zuul role for letsencrypt
-- name: Amend httpd.conf to allow letsencrypt
+- name: Create /opt/zuul/log_server/.well-known
   hosts: zuul
   pre_tasks:
-    - name: Insert virtualHost for LetsEncrypt on port 80 part2
-      ansible.builtin.blockinfile:
-        path: /opt/zuul/log_server/httpd.conf
-        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
-        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.crt\""
-        block: |
-          SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
-          SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
-      tags:
-        - httpd-config-change
-        - config-change
+    - name: Create /opt/zuul/log_server/.well-known
+      ansible.builtin.file:
+        state: directory
+        path: /opt/zuul/log_server/.well-known
+        owner: zuul
+        group: zuul
+        mode: "0755"
 
-    - name: Remove the unused SSLCertificateFile entry
-      ansible.builtin.lineinfile:
-        path: /opt/zuul/log_server/httpd.conf
-        state: absent
-        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
-      tags:
-        - httpd-config-change
-        - config-change
+    - name: Create /opt/zuul/log_server/.well-known/acme-challenge
+      ansible.builtin.file:
+        state: directory
+        path: /opt/zuul/log_server/.well-known/acme-challenge
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+
+    - name: Creating a file with content
+      ansible.builtin.copy:
+        dest: /opt/zuul/log_server/.well-known/acme-challenge/test
+        content: |
+          test
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
 
     - name: Insert virtualHost for LetsEncrypt on port 80
       ansible.builtin.blockinfile:
@@ -373,19 +379,15 @@
       tags:
         - compose-config-change
         - config-change
-
-# TODO:
-#
-# Add the missing server certs and rename the server accordingly.
-
-    # Restart the new container with the new configuration
-#    - name: Restart log_server with docker-compose
-#      ansible.builtin.command: /usr/bin/docker-compose restart log_server
-#      args:
-#        chdir: /opt/zuul
-#      tags:
-#        - restart
-#        - config-change
+  
+    # Restart the container with the new configuration
+    - name: Restart log_server with docker-compose
+      ansible.builtin.command: /usr/bin/docker-compose restart log_server
+      args:
+        chdir: /opt/zuul
+      tags:
+        - restart
+        - config-change
 
   roles:
     # use certbot rule to utilize initial cert creation
@@ -407,3 +409,36 @@
               - "{{ zuul_logserver_fqdn }}"
       tags:
         - certbot
+
+- name: Amend httpd.conf to use letsencrypt certs
+  hosts: zuul
+  pre_tasks:
+    - name: Insert ssl cert info for LetsEncrypt
+      ansible.builtin.blockinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
+        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.crt\""
+        block: |
+          SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
+          SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
+      tags:
+        - httpd-config-change
+        - config-change
+
+    - name: Remove the unused SSLCertificateFile entry
+      ansible.builtin.lineinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        state: absent
+        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
+      tags:
+        - httpd-config-change
+        - config-change
+
+    # Restart the container with the new httpd configuration
+    - name: Restart log_server with docker-compose
+      ansible.builtin.command: /usr/bin/docker-compose restart log_server
+      args:
+        chdir: /opt/zuul
+      tags:
+        - restart
+        - config-change

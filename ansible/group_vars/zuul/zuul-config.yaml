@@ -15,6 +15,9 @@ dev_zuul_logserver_fqdn: "zuul-logs-dev.scs.community"
 prod_zuul_webserver_fqdn: "zuul.scs.community"
 prod_zuul_logserver_fqdn: "zuul-logs.scs.community"
 zuul_webserver_admin_mail: "oliver.kautz@gonicus.de"
+zuul_cn_name: "{{ zuul_cn if ('zuul.dev' not in inventory_hostname) else zuul_dev_cn }}"
+zuul_cn: "zuul"
+zuul_dev_cn: "zuul_dev"
 
 add_ssh_keys_from_github:
 - o-otte
