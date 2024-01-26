@@ -367,6 +367,23 @@
         - compose-config-change
         - config-change
 
+    - name: Copy file with owner and permissions
+      ansible.builtin.copy:
+        src: /tmp/zuul.cert
+        dest: /opt/zuul/log_server/zuul.crt
+        owner: zuul
+        group: zuul
+        mode: '0600'
+
+    - name: Change the SSLCertificateFile entry
+      ansible.builtin.lineinfile:
+        path: /opt/zuul/log_server/httpd.conf
+        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
+        line: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/zuul\.crt"'
+      tags:
+        - httpd-config-change
+        - config-change
+
     - name: Insert restart policy into the docker-compose file
       ansible.builtin.blockinfile:
         path: /opt/zuul/docker-compose.yaml
@@ -379,7 +396,7 @@
       tags:
         - compose-config-change
         - config-change
-  
+
     # Restart the container with the new configuration
     - name: Restart log_server with docker-compose
       ansible.builtin.command: /usr/bin/docker-compose restart log_server
@@ -428,8 +445,8 @@
     - name: Remove the unused SSLCertificateFile entry
       ansible.builtin.lineinfile:
         path: /opt/zuul/log_server/httpd.conf
-        state: absent
         regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
+        state: absent
       tags:
         - httpd-config-change
         - config-change
