@@ -370,6 +370,7 @@
     - name: Copy file with owner and permissions
       ansible.builtin.copy:
         src: /tmp/zuul.cert
+        remote_src: true
         dest: /opt/zuul/log_server/zuul.crt
         owner: zuul
         group: zuul
