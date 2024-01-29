@@ -389,8 +389,9 @@
 
     - name: Copy file with owner and permissions
       ansible.builtin.copy:
-        src: /tmp/zuul.cert
-        dest: /opt/zuul/log_server/zuul.crt
+        src: /tmp/zuul.tmp
+        remote_src: true
+        dest: /opt/zuul/log_server/zuul.cert
         owner: zuul
         group: zuul
         mode: '0600'
@@ -399,7 +400,7 @@
       ansible.builtin.lineinfile:
         path: /opt/zuul/log_server/httpd.conf
         regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
-        line: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/zuul\.crt"'
+        line: 'SSLCertificateFile "/usr/local/apache2/conf/zuul.cert"'
       tags:
         - httpd-config-change
         - config-change
@@ -419,12 +420,26 @@
 
     # Restart the container with the new configuration
     - name: Restart log_server with docker-compose
-      ansible.builtin.command: /usr/bin/docker-compose restart log_server
-      args:
-        chdir: /opt/zuul
+      ansible.builtin.command: /usr/bin/docker-compose -f /opt/zuul/docker-compose.yaml restart log_server
       tags:
         - restart
         - config-change
+
+    - name: Mount volumes into the running container
+      docker_container:
+        name: zuul_log_server
+        image: "index.docker.io/httpd:alpine"
+        state: started
+        ports:
+          - "80:80"
+          - "443:443"
+        volumes:
+          - "/opt/zuul/log_server:/usr/local/apache2/conf:ro"
+          - "log_server:/usr/local/apache2/htdocs:z"
+          - "/etc/letsencrypt:/etc/letsencrypt:ro"
+          - "/opt/zuul/log_server/.well-known/acme-challenge/:/usr/local/apache2/htdocs/.well-known/acme-challenge/:rw"
+        networks:
+          - name: zuul_default
 
   roles:
     # use certbot rule to utilize initial cert creation
@@ -454,7 +469,7 @@
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
         marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
-        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.crt\""
+        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.cert\""
         block: |
           SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
           SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
@@ -465,17 +480,15 @@
     - name: Remove the unused SSLCertificateFile entry
       ansible.builtin.lineinfile:
         path: /opt/zuul/log_server/httpd.conf
-        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
+        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/zuul\.cert"'
         state: absent
       tags:
         - httpd-config-change
         - config-change
 
-    # Restart the container with the new httpd configuration
-    - name: Restart log_server with docker-compose
-      ansible.builtin.command: /usr/bin/docker-compose restart log_server
-      args:
-        chdir: /opt/zuul
+    # Restart the container with the new configuration
+    - name: Restart zuul_log_server
+      ansible.builtin.command: /usr/bin/docker restart zuul_log_server
       tags:
         - restart
         - config-change
