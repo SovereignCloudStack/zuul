@@ -218,6 +218,9 @@
       vars:
         zuul_auth_secret: "{{ vault_zuul_auth_secret }}"
 
+        zuul_zookeeper_metrics: true
+        zuul_metrics_statsd_host: "{{ zuul_statsd_host }}"
+
         zuul_database:
           user_name: "{{ vault_db_user_name }}"
           user_pass: "{{ vault_db_user_pass }}"
