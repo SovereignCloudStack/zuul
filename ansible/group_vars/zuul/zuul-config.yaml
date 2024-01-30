@@ -8,6 +8,8 @@ zuul_zuul_tag: "9.2.0"
 zuul_nodepool_tag: "9.0.0"
 zuul_zookeeper_tag: "3.7.2"
 
+zuul_statsd_host: "213.131.230.154"
+
 zuul_webserver_fqdn: "{{ prod_zuul_webserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_webserver_fqdn }}"
 zuul_logserver_fqdn: "{{ prod_zuul_logserver_fqdn if ('zuul.dev' not in inventory_hostname) else dev_zuul_logserver_fqdn }}"
 dev_zuul_webserver_fqdn: "zuul-dev.scs.community"
