@@ -11,10 +11,10 @@
         state: present
         update_cache: true
 
-# create key pair if not provided
-# will be used for SSH access in cloud VMs
+# # create key pair if not provided
+# # will be used for SSH access in cloud VMs
 - name: Generate SSH key for nodepool
-  hosts: localhost
+  hosts: zuul
   connection: local
   become: false
   gather_facts: false
@@ -111,22 +111,7 @@
     - name: Combine key and cert files
       ansible.builtin.shell:
        cmd: cat /tmp/zuul.key /tmp/zuul.cert > /tmp/zuul.tmp
-
-    # - openssl_privatekey:
-    #     path: /tmp/zuul.key
-    #     size: 4096
-    #     type: RSA
-    
-    # - openssl_csr:
-    #     path: /tmp/zuul.csr
-    #     privatekey_path: /tmp/zuul.key
-    
-    # - openssl_certificate:
-    #     provider: selfsigned
-    #     path: /tmp/zuul.cert
-    #     privatekey_path: /tmp/zuul.key
-    #     csr_path: /tmp/zuul.csr
-  
+ 
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
       ansible.builtin.file:
@@ -158,7 +143,7 @@
         group: zuul
         mode: "0640"
       become: true
-      when: "'zuul.dev' not in inventory_hostname"
+      when: "'zuul-logs-dev.scs.community' not in inventory_hostname"
 
     - name: Deploy clouds.yaml file for Gonicus dev zuul
       ansible.builtin.copy:
@@ -168,18 +153,19 @@
         group: zuul
         mode: "0640"
       become: true
-      when: "'zuul.dev' in inventory_hostname"
+      when: "'zuul-logs-dev.scs.community' in inventory_hostname"
 
     # TODO Add user + group zuul
     # erstellen /srv/nodepool/elements
     # certbot install
 
-    - name: Upload previously created key to cloud
-      openstack.cloud.keypair:
-        cloud: gx-scs_zuul
-        name: zuul-nodepool
-        public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
-      become: true
+    # - name: Upload previously created key to cloud
+    #   openstack.cloud.keypair:
+    #     cloud: gx-scs_zuul
+    #     state: present
+    #     name: zuul-nodepool
+    #     public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
+    #   become: true
 
     - name: Ensure elements directory exists
       ansible.builtin.file:
@@ -213,7 +199,7 @@
   roles:
     # use zuul role provided by osism to deploy a basic zuul setup
     - name: setup zuul role
-      role: osism.services.zuul
+      role: zuul
       become: true
       vars:
         zuul_auth_secret: "{{ vault_zuul_auth_secret }}"
@@ -268,7 +254,7 @@
                   config-projects:
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
-                  untrusted-projects: "{{ untrusted_projects if ('zuul.dev' not in inventory_hostname) }}"
+                  untrusted-projects: "{{ untrusted_projects if ('zuul-logs-dev.scs.community' not in inventory_hostname) }}"
 
 
         # nodepool labels configuration
@@ -342,7 +328,7 @@
                       console-log: true
                       key-name: zuul-nodepool
 
-# Manual amendments to the OSISM zuul role for letsencrypt
+# Manual amendments to the zuul role for letsencrypt
 - name: Create /opt/zuul/log_server/.well-known
   hosts: zuul
   pre_tasks:
