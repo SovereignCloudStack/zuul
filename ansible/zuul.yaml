@@ -59,21 +59,34 @@
       register: ssh_keys
       with_items: "{{ add_ssh_keys_from_github }}"
 
-    - name: Prepare Authorized Keys File
+    - name: Check if SSH key exists in authorized_keys
+      ansible.builtin.shell:
+        cmd: grep -q "{{ item.content }}" ~/.ssh/authorized_keys
+      loop: "{{ ssh_keys.results }}"
+      loop_control:
+        loop_var: item
+      register: ssh_key_existence
+      ignore_errors: true
+
+    - name: Add comment lines to ~/.ssh/authorized_keys
       ansible.builtin.lineinfile:
         path: ~/.ssh/authorized_keys
-        line: '# {{ item }}'
-      with_items: "{{ add_ssh_keys_from_github }}"
+        line: "# {{ item }}"
+        insertbefore: EOF
+      loop: "{{ add_ssh_keys_from_github }}"
+      register: comment_lines
 
-#    - name: Add SSH keys to ~/.ssh/authorized_keys
-#      ansible.builtin.lineinfile:
-#        path: ~/.ssh/authorized_keys
-#        line: "{{ item.0.content }}"
-#        regexp: "{{ item.0.content }}"
-#        insertafter: "{{ item.1 }}"
-#      with_together:
-#        - "{{ ssh_keys.results }}"
-#        - "{{ add_ssh_keys_from_github }}"
+    - name: Add SSH keys to ~/.ssh/authorized_keys
+      ansible.builtin.lineinfile:
+        path: ~/.ssh/authorized_keys
+        line: "{{ item.content }}"
+        insertafter: "{{ item.item }}"
+      loop: "{{ ssh_keys.results }}"
+      when: ssh_key_existence.results | selectattr('item', 'equalto', item.content) | length == 0
+      loop_control:
+        loop_var: item
+      vars:
+        ssh_key_existence: "{{ comment_lines }}"
 
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
@@ -107,11 +120,6 @@
       ansible.builtin.pip:
         name: openstacksdk
         version: 2.0.0
-
-    # - name: Create self-signed certificate, if configured.
-    #   ansible.builtin.command:
-    #     cmd: openssl req -x509 -nodes -subj '/CN={{ zuul_logserver_fqdn }}' -days 365 -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
-    #     creates: /tmp/zuul.cert
 
     # Create self-signed certificate, if configured.
     - name: Ensure private key is present
@@ -184,6 +192,7 @@
     #     cloud: gx-scs_zuul
     #     name: zuul-nodepool
     #     public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
+    #     state: present
     #   become: true
 
     - name: Ensure elements directory exists
