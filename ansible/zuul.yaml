@@ -1,4 +1,40 @@
 ---
+- name: Install local server certs
+  hosts: localhost
+  become: false
+  remote_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+    # Create self-signed certificate, if configured.
+    - name: Ensure private key is present
+      community.crypto.openssl_privatekey:
+        path: "{{ playbook_dir }}/files/server.key"
+        size: 4096
+        mode: "0600"
+        type: RSA
+        state: present
+        
+    - name: Ensure self-signed cert is present
+      community.crypto.x509_certificate:
+        path: "{{ playbook_dir }}/files/server.cert"
+        privatekey_path: "{{ playbook_dir }}/files/server.key"
+        provider: selfsigned
+        selfsigned_not_after: "+365d"
+        mode: "0644"
+        state: present
+
+    - name: Combine key and cert files
+      ansible.builtin.shell:
+        cmd: cat {{ playbook_dir }}/files/server.key {{ playbook_dir }}/files/server.cert > {{ playbook_dir }}/files/server.crt
+
+    # create key pair if not provided
+    # will be used for SSH access in cloud VMs
+    - name: Create Nodepool SSH Keypair
+      community.crypto.openssh_keypair:
+        path: "{{ playbook_dir }}/files/nodepool"
+        state: present
+
+
 - name: Install pip using Ansible
   hosts: zuul
   become: true
@@ -10,21 +46,6 @@
         name: python3-pip
         state: present
         update_cache: true
-
-# create key pair if not provided
-# will be used for SSH access in cloud VMs
-- name: Generate SSH key for nodepool
-  hosts: localhost
-  connection: local
-  become: false
-  gather_facts: false
-  tasks:
-    - name: Create Nodepool SSH Keypair
-      community.crypto.openssh_keypair:
-        path: "{{ playbook_dir }}/files/nodepool"
-        type: rsa
-        size: 4096
-        state: present
 
 # Setup SSH Keys
 - name: Deploy Zuul Admin SSH Keys
@@ -87,6 +108,11 @@
         name: openstacksdk
         version: 2.0.0
 
+    # - name: Create self-signed certificate, if configured.
+    #   ansible.builtin.command:
+    #     cmd: openssl req -x509 -nodes -subj '/CN={{ zuul_logserver_fqdn }}' -days 365 -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
+    #     creates: /tmp/zuul.cert
+
     # Create self-signed certificate, if configured.
     - name: Ensure private key is present
       community.crypto.openssl_privatekey:
@@ -138,7 +164,7 @@
         group: zuul
         mode: "0640"
       become: true
-      when: "'zuul.dev' not in inventory_hostname"
+      when: "'zuul-logs-dev.scs.community' not in inventory_hostname"
 
     - name: Deploy clouds.yaml file for Gonicus dev zuul
       ansible.builtin.copy:
@@ -148,18 +174,17 @@
         group: zuul
         mode: "0640"
       become: true
-      when: "'zuul.dev' in inventory_hostname"
+      when: "'zuul-logs-dev.scs.community' in inventory_hostname"
 
     # TODO Add user + group zuul
     # erstellen /srv/nodepool/elements
-    # certbot install
 
-    - name: Upload previously created key to cloud
-      openstack.cloud.keypair:
-        cloud: gx-scs_zuul
-        name: zuul-nodepool
-        public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
-      become: true
+    # - name: Upload previously created key to cloud
+    #   openstack.cloud.keypair:
+    #     cloud: gx-scs_zuul
+    #     name: zuul-nodepool
+    #     public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
+    #   become: true
 
     - name: Ensure elements directory exists
       ansible.builtin.file:
@@ -248,7 +273,7 @@
                   config-projects:
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
-                  untrusted-projects: "{{ untrusted_projects if ('zuul.dev' not in inventory_hostname) }}"
+                  untrusted-projects: "{{ untrusted_projects if ('zuul-logs-dev.scs.community' not in inventory_hostname) }}"
 
 
         # nodepool labels configuration
@@ -490,3 +515,20 @@
       tags:
         - restart
         - config-change
+
+- name: Remove locally created SSL certificates
+  hosts: localhost
+  become: false
+  remote_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+    - name: Remove SSL certificate files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_fileglob:
+        - "{{ playbook_dir }}/files/*.key"
+        - "{{ playbook_dir }}/files/*.cert"
+        - "{{ playbook_dir }}/files/*.crt"
+        - "{{ playbook_dir }}/files/nodepool*"
+  tags: delete-certs
