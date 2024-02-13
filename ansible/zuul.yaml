@@ -199,6 +199,7 @@
     #     cloud: gx-scs_zuul
     #     name: zuul-nodepool
     #     public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
+    #     state: present
     #   become: true
 
     - name: Ensure elements directory exists
@@ -378,16 +379,6 @@
       ansible.builtin.file:
         state: directory
         path: /opt/zuul/log_server/.well-known/acme-challenge
-        owner: root
-        group: root
-        mode: "0755"
-      become: true
-
-    - name: Creating a file with content
-      ansible.builtin.copy:
-        dest: /opt/zuul/log_server/.well-known/acme-challenge/test
-        content: |
-          test
         owner: root
         group: root
         mode: "0755"
