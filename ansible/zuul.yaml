@@ -368,16 +368,6 @@
         mode: "0755"
       become: true
 
-    - name: Creating a file with content
-      ansible.builtin.copy:
-        dest: /opt/zuul/log_server/.well-known/acme-challenge/test
-        content: |
-          test
-        owner: root
-        group: root
-        mode: "0755"
-      become: true
-
     - name: Insert virtualHost for LetsEncrypt on port 80
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
