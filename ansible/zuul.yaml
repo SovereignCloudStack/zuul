@@ -1,4 +1,39 @@
 ---
+- name: Install local server certs
+  hosts: localhost
+  become: false
+  remote_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+    # Create self-signed certificate, if configured.
+    - name: Ensure private key is present
+      community.crypto.openssl_privatekey:
+        path: "{{ playbook_dir }}/files/server.key"
+        size: 4096
+        mode: "0600"
+        type: RSA
+        state: present
+
+    - name: Ensure self-signed cert is present
+      community.crypto.x509_certificate:
+        path: "{{ playbook_dir }}/files/server.cert"
+        privatekey_path: "{{ playbook_dir }}/files/server.key"
+        provider: selfsigned
+        selfsigned_not_after: "+365d"
+        mode: "0644"
+        state: present
+
+    - name: Combine key and cert files
+      ansible.builtin.shell:
+        cmd: cat {{ playbook_dir }}/files/server.key {{ playbook_dir }}/files/server.cert > {{ playbook_dir }}/files/server.crt
+
+    # create key pair if not provided
+    # will be used for SSH access in cloud VMs
+    - name: Create Nodepool SSH Keypair
+      community.crypto.openssh_keypair:
+        path: "{{ playbook_dir }}/files/nodepool"
+        state: present
+
 - name: Install pip using Ansible
   hosts: zuul
   become: true
@@ -10,21 +45,6 @@
         name: python3-pip
         state: present
         update_cache: true
-
-# # create key pair if not provided
-# # will be used for SSH access in cloud VMs
-- name: Generate SSH key for nodepool
-  hosts: zuul
-  connection: local
-  become: false
-  gather_facts: false
-  tasks:
-    - name: Create Nodepool SSH Keypair
-      community.crypto.openssh_keypair:
-        path: "{{ playbook_dir }}/files/nodepool"
-        type: rsa
-        size: 4096
-        state: present
 
 # Setup SSH Keys
 - name: Deploy Zuul Admin SSH Keys
@@ -38,21 +58,34 @@
       register: ssh_keys
       with_items: "{{ add_ssh_keys_from_github }}"
 
-    - name: Prepare Authorized Keys File
+    - name: Check if SSH key exists in authorized_keys
+      ansible.builtin.shell:
+        cmd: grep -q "{{ item.content }}" ~/.ssh/authorized_keys
+      loop: "{{ ssh_keys.results }}"
+      loop_control:
+        loop_var: item
+      register: ssh_key_existence
+      ignore_errors: true
+
+    - name: Add comment lines to ~/.ssh/authorized_keys
       ansible.builtin.lineinfile:
         path: ~/.ssh/authorized_keys
-        line: '# {{ item }}'
-      with_items: "{{ add_ssh_keys_from_github }}"
+        line: "# {{ item }}"
+        insertbefore: EOF
+      loop: "{{ add_ssh_keys_from_github }}"
+      register: comment_lines
 
-#    - name: Add SSH keys to ~/.ssh/authorized_keys
-#      ansible.builtin.lineinfile:
-#        path: ~/.ssh/authorized_keys
-#        line: "{{ item.0.content }}"
-#        regexp: "{{ item.0.content }}"
-#        insertafter: "{{ item.1 }}"
-#      with_together:
-#        - "{{ ssh_keys.results }}"
-#        - "{{ add_ssh_keys_from_github }}"
+    - name: Add SSH keys to ~/.ssh/authorized_keys
+      ansible.builtin.lineinfile:
+        path: ~/.ssh/authorized_keys
+        line: "{{ item.content }}"
+        insertafter: "{{ item.item }}"
+      loop: "{{ ssh_keys.results }}"
+      when: ssh_key_existence.results | selectattr('item', 'equalto', item.content) | length == 0
+      loop_control:
+        loop_var: item
+      vars:
+        ssh_key_existence: "{{ comment_lines }}"
 
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
@@ -86,31 +119,6 @@
       ansible.builtin.pip:
         name: openstacksdk
         version: 2.0.0
-
-    # - name: Create self-signed certificate, if configured.
-    #   ansible.builtin.command:
-    #     cmd: openssl req -x509 -nodes -subj '/CN={{ zuul_logserver_fqdn }}' -days 365 -newkey rsa:4096 -sha256 -keyout /tmp/zuul.key -out /tmp/zuul.cert
-    #     creates: /tmp/zuul.cert
-
-    # Create self-signed certificate, if configured.
-    - name: Ensure private key is present
-      community.crypto.openssl_privatekey:
-        path: /tmp/zuul.key
-        size: 4096
-        mode: "0600"
-        type: RSA
-        
-    - name: Ensure self-signed cert is present
-      community.crypto.x509_certificate:
-        path: /tmp/zuul.cert
-        privatekey_path: /tmp/zuul.key
-        provider: selfsigned
-        selfsigned_not_after: "+365d"
-        mode: "0644"
-
-    - name: Combine key and cert files
-      ansible.builtin.shell:
-       cmd: cat /tmp/zuul.key /tmp/zuul.cert > /tmp/zuul.tmp
  
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
@@ -145,7 +153,7 @@
       become: true
       when: "'zuul-logs-dev.scs.community' not in inventory_hostname"
 
-    - name: Deploy clouds.yaml file for Gonicus dev zuul
+    - name: Deploy clouds-dev.yaml file for Gonicus dev zuul
       ansible.builtin.copy:
         src: clouds-dev.yaml
         dest: /etc/openstack/clouds.yaml
@@ -154,18 +162,6 @@
         mode: "0640"
       become: true
       when: "'zuul-logs-dev.scs.community' in inventory_hostname"
-
-    # TODO Add user + group zuul
-    # erstellen /srv/nodepool/elements
-    # certbot install
-
-    # - name: Upload previously created key to cloud
-    #   openstack.cloud.keypair:
-    #     cloud: gx-scs_zuul
-    #     state: present
-    #     name: zuul-nodepool
-    #     public_key: "{{ lookup('file', 'files/nodepool.pub') }}"
-    #   become: true
 
     - name: Ensure elements directory exists
       ansible.builtin.file:
@@ -197,7 +193,7 @@
       become: true
 
   roles:
-    # use zuul role provided by osism to deploy a basic zuul setup
+    # use local zuul role to deploy a basic zuul setup
     - name: setup zuul role
       role: zuul
       become: true
@@ -359,92 +355,6 @@
         mode: "0755"
       become: true
 
-    - name: Insert virtualHost for LetsEncrypt on port 80
-      ansible.builtin.blockinfile:
-        path: /opt/zuul/log_server/httpd.conf
-        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK letsencrypt -->"
-        insertafter: "^<VirtualHost _default_:80>"
-        block: |
-          Alias /.well-known/acme-challenge/ /usr/local/apache2/htdocs/.well-known/acme-challenge/
-          <Directory "/usr/local/apache2/htdocs/.well-known/acme-challenge/">
-            AllowOverride None
-            Options MultiViews SymLinksIfOwnerMatch IncludesNoExec
-            Require method GET POST OPTIONS
-          </Directory>
-          RewriteCond %{REQUEST_URI} /\.well\-known/acme\-challenge/
-          RewriteRule (.*) $1 [L,QSA]
-      tags:
-        - httpd-config-change
-        - config-change
-
-    - name: Insert letsencrypt volumes into the docker-compose file
-      ansible.builtin.blockinfile:
-        path: /opt/zuul/docker-compose.yaml
-        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK letsencrypt volumes -->"
-        insertafter: "log_server:\/usr\/local\/apache2\/htdocs:z"
-        block: |
-          {% filter indent(width=6, first=true) %}
-          - "/etc/letsencrypt:/etc/letsencrypt:ro"
-          - "/opt/zuul/log_server/.well-known/acme-challenge/:/usr/local/apache2/htdocs/.well-known/acme-challenge/:rw"
-          {% endfilter %}
-      tags:
-        - compose-config-change
-        - config-change
-
-    - name: Copy file with owner and permissions
-      ansible.builtin.copy:
-        src: /tmp/zuul.tmp
-        remote_src: true
-        dest: /opt/zuul/log_server/zuul.cert
-        owner: zuul
-        group: zuul
-        mode: '0600'
-
-    - name: Change the SSLCertificateFile entry
-      ansible.builtin.lineinfile:
-        path: /opt/zuul/log_server/httpd.conf
-        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server\.crt"'
-        line: 'SSLCertificateFile "/usr/local/apache2/conf/zuul.cert"'
-      tags:
-        - httpd-config-change
-        - config-change
-
-    - name: Insert restart policy into the docker-compose file
-      ansible.builtin.blockinfile:
-        path: /opt/zuul/docker-compose.yaml
-        marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK restart policy -->"
-        insertafter: "container_name: \"zuul_log_server\""
-        block: |
-          {% filter indent(width=4, first=true) %}
-          restart: unless-stopped
-          {% endfilter %}
-      tags:
-        - compose-config-change
-        - config-change
-
-    # Restart the container with the new configuration
-    - name: Restart log_server with docker-compose
-      ansible.builtin.command: /usr/bin/docker-compose -f /opt/zuul/docker-compose.yaml restart log_server
-      tags:
-        - restart
-        - config-change
-
-    - name: Mount volumes into the running container
-      docker_container:
-        name: zuul_log_server
-        image: "index.docker.io/httpd:alpine"
-        state: started
-        ports:
-          - "80:80"
-          - "443:443"
-        volumes:
-          - "/opt/zuul/log_server:/usr/local/apache2/conf:ro"
-          - "log_server:/usr/local/apache2/htdocs:z"
-          - "/etc/letsencrypt:/etc/letsencrypt:ro"
-          - "/opt/zuul/log_server/.well-known/acme-challenge/:/usr/local/apache2/htdocs/.well-known/acme-challenge/:rw"
-        networks:
-          - name: zuul_default
-
   roles:
     # use certbot rule to utilize initial cert creation
     - name: Install and configure certbot
@@ -473,7 +383,7 @@
       ansible.builtin.blockinfile:
         path: /opt/zuul/log_server/httpd.conf
         marker: "#<!-- {mark} ANSIBLE MANAGED BLOCK sslcerts -->"
-        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.cert\""
+        insertafter: "^SSLCertificateFile \"\/usr\/local\/apache2\/conf\/server.crt\""
         block: |
           SSLCertificateFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/fullchain.pem"
           SSLCertificateKeyFile "/etc/letsencrypt/live/{{ zuul_webserver_fqdn }}/privkey.pem"
@@ -484,7 +394,7 @@
     - name: Remove the unused SSLCertificateFile entry
       ansible.builtin.lineinfile:
         path: /opt/zuul/log_server/httpd.conf
-        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/zuul\.cert"'
+        regexp: '^SSLCertificateFile "\/usr\/local\/apache2\/conf\/server.crt"'
         state: absent
       tags:
         - httpd-config-change
@@ -496,3 +406,21 @@
       tags:
         - restart
         - config-change
+
+- name: Remove locally created SSL certificates
+  hosts: localhost
+  become: false
+  remote_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+    - name: Remove SSL certificate files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_fileglob:
+        - "{{ playbook_dir }}/files/*.key"
+        - "{{ playbook_dir }}/files/*.cert"
+        - "{{ playbook_dir }}/files/*.crt"
+        - "{{ playbook_dir }}/files/nodepool*"
+  tags: delete-certs
+
