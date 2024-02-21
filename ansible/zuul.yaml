@@ -5,6 +5,12 @@
   remote_user: "{{ lookup('env', 'USER') }}"
 
   tasks:
+    - name: Create local directory
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/files"
+        state: directory
+      delegate_to: localhost
+
     # Create self-signed certificate, if configured.
     - name: Ensure private key is present
       community.crypto.openssl_privatekey:
