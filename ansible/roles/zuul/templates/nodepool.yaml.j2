@@ -1,0 +1,14 @@
+zookeeper-servers:
+- host: {{ container_name.zookeeper }}
+  port: 2281
+zookeeper-tls:
+  cert: /var/certs/certs/client.pem
+  key: /var/certs/keys/clientkey.pem
+  ca: /var/certs/certs/cacert.pem
+
+build-log-dir: /srv/nodepool/builds
+images-dir: /srv/nodepool/images
+
+{{ zuul_nodepool_labels|to_nice_yaml(indent=2) }}
+
+{{ zuul_nodepool_providers|to_nice_yaml(indent=2) }}

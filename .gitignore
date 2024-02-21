@@ -8,4 +8,7 @@ terraform/gx-scs/.terraform
 ansible/.vault-password
 ansible/pem-files/*
 ansible/files/*
+<<<<<<< HEAD
 ansible/roles/*
+=======
+>>>>>>> f572986 (Removed the zuul role from .gitignore)
