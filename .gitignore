@@ -7,4 +7,3 @@ ansible/clouds-dev.yaml
 terraform/gx-scs/.terraform
 ansible/.vault-password
 ansible/pem-files/*
-ansible/files/*
