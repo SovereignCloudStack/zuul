@@ -2,8 +2,8 @@
 bin/
 lib/
 pyvenv.cfg
-*clouds.yaml
-*clouds-dev.yaml
+ansible/clouds.yaml
+clouds-dev.yaml
 terraform/gx-scs/.terraform
 ansible/.vault-password
 ansible/pem-files/*
