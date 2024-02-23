@@ -125,7 +125,7 @@
       ansible.builtin.pip:
         name: openstacksdk
         version: 2.0.0
- 
+
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
       ansible.builtin.file:
@@ -351,6 +351,7 @@
         mode: "0755"
       become: true
 
+
     - name: Creating a file with content
       ansible.builtin.copy:
         dest: /opt/zuul/log_server/.well-known/acme-challenge/test
@@ -429,4 +430,3 @@
         - "{{ playbook_dir }}/files/*.crt"
         - "{{ playbook_dir }}/files/nodepool*"
   tags: delete-certs
-
