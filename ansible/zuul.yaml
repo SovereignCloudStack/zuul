@@ -126,26 +126,6 @@
         name: openstacksdk
         version: 2.0.0
 
-    # Create self-signed certificate, if configured.
-    - name: Ensure private key is present
-      community.crypto.openssl_privatekey:
-        path: /tmp/zuul.key
-        size: 4096
-        mode: "0600"
-        type: RSA
-        
-    - name: Ensure self-signed cert is present
-      community.crypto.x509_certificate:
-        path: /tmp/zuul.cert
-        privatekey_path: /tmp/zuul.key
-        provider: selfsigned
-        selfsigned_not_after: "+365d"
-        mode: "0644"
-
-    - name: Combine key and cert files
-      ansible.builtin.shell:
-       cmd: cat /tmp/zuul.key /tmp/zuul.cert > /tmp/zuul.tmp
-  
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
       ansible.builtin.file:
