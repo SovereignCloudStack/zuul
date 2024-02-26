@@ -52,73 +52,46 @@
         state: present
         update_cache: true
 
-# create key pair if not provided
-# will be used for SSH access in cloud VMs
-- name: Generate SSH key for nodepool
-  hosts: localhost
-  tasks:
-    - community.crypto.openssh_keypair:
-        path: "{{ playbook_dir }}/zuul-nodepool"
-        type: rsa
-        size: 4096
-        state: present
-
-# - name: Pull caddy docker container
-#   hosts: zuul
-#   become: true
-#   pre_tasks:
-#     - name: Creates directory
-#       file:
-#         path: /opt/caddy
-#         state: directory
-#     - name: Copy file with owner and permissions
-#       ansible.builtin.copy:
-#         src: Caddyfile
-#         dest: /opt/caddy/Caddyfile
-#         owner: root
-#         group: root
-#         mode: '0644'
-#   tasks:
-#     - name: Create Nodepool SSH Keypair
-#       community.crypto.openssh_keypair:
-#         path: "{{ playbook_dir }}/files/nodepool"
-#         type: rsa
-#         size: 4096
-#         state: present
-#     - docker_container:
-#         name: caddy
-#         image: caddy
-#         state: started
-#         networks:
-#           - name: "zuul_default"
-#         ports:
-#           - "0.0.0.0:80:80/tcp"
-#           - "0.0.0.0:443:443/tcp"
-#         volumes:
-#           - /opt/caddy/Caddyfile:/etc/caddy/Caddyfile
-
 # Setup SSH Keys
-- name: Get SSH Keys for Zuul Admins from GitHub
-  ansible.builtin.uri:
-    url: "https://github.com/{{ item }}.keys"
-    return_content: true
-  register: ssh_keys
-  with_items: {{ add_ssh_keys_from_github }} 
+- name: Deploy Zuul Admin SSH Keys
+  hosts: zuul
+  become_user: ubuntu
+  tasks:
+    - name: Get SSH Keys from Github
+      ansible.builtin.uri:
+        url: "https://github.com/{{ item }}.keys"
+        return_content: true
+      register: ssh_keys
+      with_items: "{{ add_ssh_keys_from_github }}"
 
-- name: Prepare Authorized Keys File
-  ansible.builtin.lineinfile:
-    path: ~/.ssh/authorized_keys
-    line: '# {{ item }}'
-  with_items: add_ssh_keys_from_github
+    - name: Check if SSH key exists in authorized_keys
+      ansible.builtin.shell:
+        cmd: grep -q "{{ item.content }}" ~/.ssh/authorized_keys
+      loop: "{{ ssh_keys.results }}"
+      loop_control:
+        loop_var: item
+      register: ssh_key_existence
+      ignore_errors: true
 
-- name: add SSH keys to ~/.ssh/authorized_keys
-  ansible.builtin.lineinfile:
-    path: ~/.ssh/authorized_keys
-    line: "{{ item.0.content }}"
-    insertafter: {{ item.1 }}
-  with_together:
-    - ssh_keys.results
-    - add_ssh_keys_from_github
+    - name: Add comment lines to ~/.ssh/authorized_keys
+      ansible.builtin.lineinfile:
+        path: ~/.ssh/authorized_keys
+        line: "# {{ item }}"
+        insertbefore: EOF
+      loop: "{{ add_ssh_keys_from_github }}"
+      register: comment_lines
+
+    - name: Add SSH keys to ~/.ssh/authorized_keys
+      ansible.builtin.lineinfile:
+        path: ~/.ssh/authorized_keys
+        line: "{{ item.content }}"
+        insertafter: "{{ item.item }}"
+      loop: "{{ ssh_keys.results }}"
+      when: ssh_key_existence.results | selectattr('item', 'equalto', item.content) | length == 0
+      loop_control:
+        loop_var: item
+      vars:
+        ssh_key_existence: "{{ comment_lines }}"
 
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
@@ -152,7 +125,7 @@
       ansible.builtin.pip:
         name: openstacksdk
         version: 2.0.0
-
+ 
     # create directory to place your cloud connection information in
     - name: Create /etc/openstack/
       ansible.builtin.file:
@@ -160,7 +133,7 @@
         path: /etc/openstack
         owner: root
         group: root
-        mode: 0755
+        mode: "0755"
       become: true
 
     - name: Ensure group "zuul" exists
@@ -270,7 +243,8 @@
 
         zuul_tenants:
           - tenant:
-              name: scs-dev
+              name: SCS
+              exclude-unprotected-branches: true
               source:
                 opendevorg:
                   # just a repo to include some jobs definitions
@@ -278,7 +252,7 @@
                     - zuul/zuul-jobs:
                         include:
                           - job
-                scs-github:
+                githubzuulapp:
                   config-projects:
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
@@ -291,30 +265,29 @@
             - name: ubuntu-jammy
               min-ready: 2
 
-
-         # nodepool providers configuration containing the openstack part
-         # and the DIB (disk image builder)
-         zuul_nodepool_providers:
-           elements-dir: /srv/nodepool/elements
-           diskimages:
-             - name: base
-               abstract: true
-               elements:
-                 - vm
-                 - block-device-efi
-                 - growroot
-                 - enable-serial-console
-                 - cloud-init
-                 - pkg-map
-                 - infra-package-needs
-                 - zuul-worker
-               formats:
-                 - qcow2
-               env-vars:
-                 TMPDIR: /srv/dib_tmp
-                 DIB_CHECKSUM: "1"
-                 DIB_IMAGE_CACHE: /srv/dib_cache
-                 DIB_CLOUD_INIT_DATASOURCES: OpenStack
+        # nodepool providers configuration containing the openstack part
+        # and the DIB (disk image builder)
+        zuul_nodepool_providers:
+          elements-dir: /srv/nodepool/elements
+          diskimages:
+            - name: base
+              abstract: true
+              elements:
+                - vm
+                - block-device-efi
+                - growroot
+                - enable-serial-console
+                - cloud-init
+                - pkg-map
+                - infra-package-needs
+                - zuul-worker
+              formats:
+                - qcow2
+              env-vars:
+                TMPDIR: /srv/dib_tmp
+                DIB_CHECKSUM: "1"
+                DIB_IMAGE_CACHE: /srv/dib_cache
+                DIB_CLOUD_INIT_DATASOURCES: OpenStack
 
             - name: ubuntu-jammy
               parent: base
@@ -377,7 +350,6 @@
         group: root
         mode: "0755"
       become: true
-
 
     - name: Creating a file with content
       ansible.builtin.copy:
@@ -457,3 +429,4 @@
         - "{{ playbook_dir }}/files/*.crt"
         - "{{ playbook_dir }}/files/nodepool*"
   tags: delete-certs
+
