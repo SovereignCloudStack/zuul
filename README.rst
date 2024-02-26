@@ -17,48 +17,16 @@ infrastructure we want to use for zuul.
 
 ## Ansible
 
-If you want to install zuul on a given infrastructure you need to provide some information.
-Please check that your file tree looks like this if you want to create a basic installation.
+After cloning this repository you will firstly need to add two files:
 
-<pre>
-[0][user@host:ansible]$ tree
-.
-├── certs
-├── clouds.yaml
-├── elements
-│   ├── infra-package-needs
-│   │   ├── element-deps
-│   │   ├── install.d
-│   │   │   ├── 10-packages
-│   │   │   ├── 40-install-bindep
-│   │   │   └── 89-rsyslog
-│   │   ├── package-installs.yaml
-│   │   ├── pkg-map
-│   │   ├── post-install.d
-│   │   │   ├── 80-enable-haveged
-│   │   │   ├── 80-enable-infra-services
-│   │   │   └── 89-sshd
-│   │   ├── pre-install.d
-│   │   │   └── 00-gentoo-useflags
-│   │   ├── README.rst
-│   │   └── rsyslog.d
-│   │       └── 50-default.conf
-│   └── zuul-worker
-│       ├── element-deps
-│       ├── extra-data.d
-│       │   └── 60-zuul-user
-│       ├── install.d
-│       │   └── 60-zuul-worker
-│       └── README.rst
-├── inventory.ini
-├── nodepool
-├── nodepool.pub
-├── package-installs.yaml
-├── pem-files
-│   └── my-zuul-app-private-key.pem
-├── server.crt
-├── zuul-config.yaml
-└── zuul.yaml
+1. The `.vault-password` containing the password required to use the values contained within the ansible vault.
+2. Either a `clouds.yaml`or a `clouds-dev.yaml`, the latter being used for the dev environment only. An example of this file is show in the repository.
 
-11 directories, 28 files
-</pre>
+NOTE: Running the ansible playbook without specifying any paramatera will cause it to deploy both the productiona and development systems.
+For this reason we recommend that you specify the platform to install to.
+
+Example:
+
+`ansible-playbook -i inventory.ini -D zuul.yaml --limit "localhost,zuul-logs-dev.scs.community" --user ubuntu``
+
+The localhost is required because the playbook will create certificates locally before uplaoding them to the platform.
