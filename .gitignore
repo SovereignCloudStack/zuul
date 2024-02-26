@@ -8,7 +8,6 @@ terraform/gx-scs/.terraform
 ansible/.vault-password
 ansible/pem-files/*
 ansible/files/*
-ansible/roles/zuul/*
 
 ## Terraform related
 # Local .terraform directories
