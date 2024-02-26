@@ -27,6 +27,8 @@ For this reason we recommend that you specify the platform to install to.
 
 Example:
 
+(run from the ansible directory)
+
 `ansible-playbook -i inventory.ini -D zuul.yaml --limit "localhost,zuul-logs-dev.scs.community" --user ubuntu``
 
 The localhost is required because the playbook will create certificates locally before uplaoding them to the platform.
