@@ -1,0 +1,62 @@
+---
+# tasks file for zuul
+
+# unfortunately zookeeper can only read certificates with group
+# permissions. therefore the base directory can only be entered
+# by the owner. the files in this directory will have read
+# permissions for all others too.
+- name: Create base config directory
+  ansible.builtin.file:
+    state: directory
+    path: "{{ zuul_base_conf_dir }}"
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+- name: Create component config directories
+  ansible.builtin.file:
+    state: directory
+    path: "{{ item['value'] }}"
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+  loop: "{{ zuul_component_conf_dirs | dict2items }}"
+
+- name: Create log directory
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: /var/log/zuul
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+- name: Create nodepool directories
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+  loop:
+    - /srv/dib_cache
+    - /srv/dib_tmp
+    - /srv/nodepool
+    - /srv/nodepool/builds
+    - /srv/nodepool/elements
+    - /srv/nodepool/images
+
+- name: Include copy tasks
+  ansible.builtin.include_tasks: copy_tasks.yml
+
+- name: Include template tasks
+  ansible.builtin.include_tasks: template_tasks.yml
+
+- name: Include generation of certificates and keys
+  ansible.builtin.include_tasks: generate_certs_and_keys.yml
+
+- name: Start zuul
+  community.docker.docker_compose:
+    project_src: "{{ zuul_base_conf_dir }}"
+    project_name: zuul

@@ -1,0 +1,4 @@
+---
+statsd_exporter_filename: statsd_exporter-0.26.0.linux-amd64.tar.gz
+statsd_exporter_dist: https://github.com/prometheus/statsd_exporter/releases/download/v0.26.0/statsd_exporter-0.26.0.linux-amd64.tar.gz
+statsd_exporter_sha256: 00452686595bffca4a4b2d0767d086bb24f0d49b79857c056bab472911bbbb83

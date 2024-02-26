@@ -1,0 +1,11 @@
+---
+- name: Setup Exporters
+  hosts: zuul
+  become: true
+  roles:
+    - node-exporter
+    - cadvisor
+    ## Note (@mfeder): The decision is not to use the statsd->prometheus mapping for Zuul metrics.
+    ## See https://input.scs.community/2023-scs-team-ops#How-to-get-Zuul-Statsd-Metrics-into-the-Observer-Prometheus-Cluster-matofeder-o-otte
+    ## Therefore, the statsd-exporter is excluded.
+    # - statsd-exporter
