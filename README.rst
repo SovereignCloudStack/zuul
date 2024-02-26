@@ -2,33 +2,30 @@
 
 ## Introduction
 
-This repository contains the infrastructure code you
-need to recreate the zuul installation used by SCS to test
-testbed deployments.
+This repository contains the infrastructure code necessary to recreate the Zuul installation used by SCS for testing testbed deployments.
 
 ## Terraform
 
-The current version uses terraform to deploy the basic
-infrastructure on wavestack. After all information are
-in place apply the manifest to create the basic
-infrastructure we want to use for zuul.
+The current version uses Terraform to deploy the basic infrastructure on Wavestack. Follow these steps to deploy the infrastructure:
 
-<code>terraform apply -var-file config.tfvars</code>
+1. Ensure all required information is configured in the `config.tfvars` file.
+2. Apply the Terraform manifest to create the basic infrastructure:
+
+  terraform apply -var-file config.tfvars
+
 
 ## Ansible
 
-After cloning this repository you will firstly need to add two files:
+After cloning this repository, follow these steps to set up Ansible:
 
-1. The `.vault-password` containing the password required to use the values contained within the ansible vault.
-2. Either a `clouds.yaml`or a `clouds-dev.yaml`, the latter being used for the dev environment only. An example of this file is show in the repository.
+1. Add the following files:
+   - `.vault-password`: Contains the password required to use values stored in the Ansible vault.
+   - `clouds.yaml` or `clouds-dev.yaml` (for development only). Example files are provided in the repository.
 
-NOTE: Running the ansible playbook without specifying any paramatera will cause it to deploy both the productiona and development systems.
-For this reason we recommend that you specify the platform to install to.
+2. Run the Ansible playbook from the `ansible` directory. Specify the platform to install to using the `--limit` option:
 
-Example:
+Example for dev deployment:
 
-(run from the ansible directory)
+  ansible-playbook -i inventory.ini -D zuul.yaml --limit "localhost,zuul-logs-dev.scs.community" --user ubuntu
 
-`ansible-playbook -i inventory.ini -D zuul.yaml --limit "localhost,zuul-logs-dev.scs.community" --user ubuntu``
-
-The localhost is required because the playbook will create certificates locally before uplaoding them to the platform.
+Note: The `localhost` is required because the playbook creates certificates locally before uploading them to the platform.
