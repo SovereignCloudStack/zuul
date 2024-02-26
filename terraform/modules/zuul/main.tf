@@ -1,10 +1,10 @@
 # define terraform provider
 terraform {
-  required_version = ">= 1.3.7"
+  required_version = ">= 1.3.7, <1.6.0"
   required_providers {
     openstack = {
       source  = "terraform-provider-openstack/openstack"
-      version = "~> 1.49.0"
+      version = "~> 1.53.0"
     }
   }
 }
@@ -66,22 +66,55 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_zuul_http" {
   security_group_id = openstack_networking_secgroup_v2.zuul_secgroup.id
 }
 
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 80
+  port_range_max    = 80
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.zuul_secgroup.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 443
+  port_range_max    = 443
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.zuul_secgroup.id
+}
+
 # create zuul head node
 resource "openstack_compute_instance_v2" "zuul" {
-  name            = "zuul"
+  name            = var.zuul_vm_name
   image_id        = var.zuul_instance_image_id
   flavor_name     = var.zuul_flavor_name
   key_pair        = var.zuul_key_pair
-  security_groups = ["${openstack_networking_secgroup_v2.zuul_secgroup.id}"]
+  security_groups = [openstack_networking_secgroup_v2.zuul_secgroup.id]
+
+  block_device {
+    uuid                  = var.zuul_instance_image_id
+    source_type           = "image"
+    destination_type      = "volume"
+    volume_size           = 100
+    boot_index            = 0
+    delete_on_termination = true
+  }
 
   network {
     name = openstack_networking_network_v2.zuul_network.name
+  }
+
+  lifecycle {
+    ignore_changes = [ image_id, security_groups ]
   }
 }
 
 # create an floating IP 
 resource "openstack_networking_floatingip_v2" "fip_1" {
-  pool = "external"
+  pool = "ext01"
 }
 
 # attach floating IP to zuul instance

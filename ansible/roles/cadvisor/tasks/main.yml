@@ -1,0 +1,41 @@
+---
+# tasks file for cadvisor
+
+- name: Check if cadvisor is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/cadvisor
+    checksum_algorithm: sha256
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  register: cadvisor_binary
+
+# TODO, kein archiv, datei dirket benutzen
+- name: Install cadvisor from github release
+  ansible.builtin.get_url:
+    url: "{{ cadvisor_dist }}"
+    checksum: "sha256:{{ cadvisor_sha256 }}"
+    dest: "/usr/local/bin/cadvisor"
+    force: false
+    mode: u=rwx,g=rx,o=rx
+  when: cadvisor_binary.stat.checksum is not defined or cadvisor_binary.stat.checksum != cadvisor_sha256
+
+- name: Ensure cadvisor systemd service exists
+  ansible.builtin.copy:
+    src: cadvisor.service
+    dest: /etc/systemd/system/cadvisor.service
+    mode: u=rwx,g=rx,o=rx
+  register: cadvisor_systemd
+  notify: restart cadvisor
+
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: cadvisor_systemd.changed
+
+- name: Ensure cadvisor is enabled and started
+  ansible.builtin.service:
+    name: cadvisor
+    enabled: true
+    state: started
+    use: service

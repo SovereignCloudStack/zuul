@@ -1,0 +1,9 @@
+[Unit]
+Description=Cadvisor Daemon
+
+[Service]
+Restart=always
+ExecStart=/usr/local/bin/cadvisor --docker_only --port 9180
+
+[Install]
+WantedBy=multi-user.target
