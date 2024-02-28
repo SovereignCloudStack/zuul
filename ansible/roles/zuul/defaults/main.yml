@@ -24,6 +24,8 @@ zuul_component_conf_dirs:
   web: "{{ zuul_base_conf_dir }}/web"
   log_server: "{{ zuul_base_conf_dir }}/log_server"
   scheduler: "{{ zuul_base_conf_dir }}/scheduler"
+  data: "{{ zuul_base_conf_dir }}/data"
+  datalogs: "{{ zuul_base_conf_dir }}/datalogs"
 
 
 ###############################################################################
