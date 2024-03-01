@@ -148,6 +148,18 @@
         groups: zuul
         append: true
 
+    - name: Ensure group "mysql" exists
+      ansible.builtin.group:
+        name: mysql
+        state: present
+
+    - name: Ensure the user 'mysql' exists
+      ansible.builtin.user:
+        name: mysql
+        shell: /bin/bash
+        groups: mysql
+        append: true
+
     # copy cloud connection information to the right place
     - name: Deploy clouds.yaml file for SCS zuul
       ansible.builtin.copy:

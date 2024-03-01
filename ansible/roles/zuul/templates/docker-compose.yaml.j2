@@ -7,7 +7,7 @@ services:
     env_file: "{{ zuul_base_conf_dir }}/mariadb.env"
 {% if zuul_mariadb_volume | length > 0 %}
     volumes:
-      - "{{ zuul_mariadb_volume }}:/var/lib/mysql"
+      - "{{ zuul_mariadb_volume }}:/var/lib/mysql:rw"
 {% endif %}
   zookeeper:
     restart: unless-stopped
