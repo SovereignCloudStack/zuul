@@ -31,6 +31,15 @@
     group: "{{ zuul_group }}"
     mode: 0755
 
+- name: Create mysql directory
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ zuul_base_conf_dir }}/mysql"
+    owner: "mysql"
+    group: "mysql"
+    mode: 0755
+
 - name: Create nodepool directories
   become: true
   ansible.builtin.file:

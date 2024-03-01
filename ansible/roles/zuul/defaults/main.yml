@@ -27,13 +27,12 @@ zuul_component_conf_dirs:
   data: "{{ zuul_base_conf_dir }}/data"
   datalogs: "{{ zuul_base_conf_dir }}/datalogs"
 
-
 ###############################################################################
 # Volumes
 ###############################################################################
 
 zuul_log_volume: log_server
-zuul_mariadb_volume: ""
+zuul_mariadb_volume: "{{ zuul_base_conf_dir }}/mysql"
 
 ###############################################################################
 # Zuul
