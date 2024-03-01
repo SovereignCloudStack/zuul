@@ -55,10 +55,10 @@
     group: "{{ zuul_group }}"
     mode: 0644
 
-# - name: Copy log server certificate
-#   ansible.builtin.copy:
-#     src: server.crt
-#     dest: "{{ zuul_component_conf_dirs.log_server }}/server.crt"
-#     owner: "{{ zuul_user }}"
-#     group: "{{ zuul_group }}"
-#     mode: 0600
+- name: Copy log server certificate
+  ansible.builtin.copy:
+    src: server.crt
+    dest: "{{ zuul_component_conf_dirs.log_server }}/server.crt"
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0600
