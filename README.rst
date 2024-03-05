@@ -18,9 +18,8 @@ The current version uses Terraform to deploy the basic infrastructure on Wavesta
 
 After cloning this repository, follow these steps to set up Ansible:
 
-1. Add the following files:
+1. Add the following file:
    - `ansible/.vault-password`: Contains the password required to use values stored in the Ansible vault.
-   - `ansible/clouds.yaml` or `ansible/clouds-dev.yaml` (for development only). Example file is provided in the repository.
 
 2. Run the Ansible playbook from the `ansible` directory. Specify the platform to install to using the `--limit` option:
 
