@@ -1,11 +1,4 @@
 ---
-# - name: Copy pem files (e.g. for github)
-#   ansible.posix.synchronize:
-#     src: "{{ playbook_dir }}/pem-files/"
-#     dest: "{{ zuul_component_conf_dirs.zuul }}/pem-files"
-#     owner: false
-#     group: false
-
 - name: Copy zuul logging configs
   ansible.builtin.copy:
     src: "{{ item }}"

@@ -160,9 +160,8 @@
         mode: "0640"
       become: true
       vars:
-        zuul_clouds_password: "{{ vault_zuul_clouds_password if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_password }}"
-        zuul_clouds_projectID: "{{ vault_zuul_clouds_projectID if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_projectID }}"
-        zuul_clouds_projectname: "{{ vault_zuul_clouds_projectname if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_projectname}}"
+        zuul_clouds: "{{ vault_zuul_clouds_yaml if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_yaml }}"
+      tags: clouds-yaml
 
     - name: Ensure elements directory exists
       ansible.builtin.file:
@@ -171,6 +170,22 @@
         mode: '0755'
         owner: zuul
         group: zuul
+
+    - name: Ensure pem-files directory exists
+      ansible.builtin.file:
+        path: /opt/zuul/zuul_configuration/pem-files
+        state: directory
+        mode: '0755'
+        owner: zuul
+        group: zuul
+
+    - name: Copy pem files (e.g. for github)
+      ansible.builtin.template:
+        src: "scs-zuul-app-private-key.pem.j2"
+        dest: "/opt/zuul/zuul_configuration/pem-files/scs-zuul-app-private-key.pem"
+        owner: "root"
+        group: "root"
+        mode: 0644
 
     # get package-installs.yaml in place to provide additional
     # software configuration for the cloud images
@@ -218,7 +233,7 @@
             driver: github
             webhook_token: "{{ vault_github_webhook_token }}"
             app_id: "{{ vault_github_app_id }}"
-            app_key: "{{ vault_github_app_key }}"
+            app_key: "{{ vault_github_app_path }}"
           # we include public job definitions here
           opendevorg:
             name: opendev

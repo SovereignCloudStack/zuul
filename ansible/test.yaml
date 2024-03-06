@@ -1,0 +1,10 @@
+- name: Example playbook
+  hosts: localhost
+  become: false
+  remote_user: "{{ lookup('env', 'USER') }}"
+  vars_files:
+    - group_vars/zuul/zuul_vault.yaml
+  tasks:
+    - name: Display the key
+      debug:
+        msg: "{{ vault_github_app_key }}"
