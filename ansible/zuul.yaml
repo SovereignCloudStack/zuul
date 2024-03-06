@@ -97,7 +97,7 @@
 - name: Setup zuul playbook
   hosts: zuul
   vars_files:
-    - {{ playbook_dir }}/group_vars/zuul/zuul_vault.yaml
+    - "{{ playbook_dir }}/group_vars/zuul/zuul_vault.yaml"
   pre_tasks:
     - name: Ensure docker-compose is available
       become: true
@@ -153,16 +153,16 @@
     # copy cloud connection information
     - name: Populate and copy clouds.yaml to VM
       template:
-        src: {{ playbook_dir }}/templates/clouds.yaml.j2
-        dest: /etc/openstack/clouds.yaml
+        src: "{{ playbook_dir }}/templates/clouds.yaml.j2"
+        dest: "/etc/openstack/clouds.yaml"
         owner: root
         group: zuul
         mode: "0640"
       become: true
       vars:
-        zuul_clouds_password: "{{ vault_zuul_clouds_password }}"
-        zuul_clouds_projectID: "{{ vault_zuul_clouds_projectID }}"
-        zuul_clouds_projectname: "{{ vault_zuul_clouds_projectname }}"
+        zuul_clouds_password: "{{ vault_zuul_clouds_password if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_password }}"
+        zuul_clouds_projectID: "{{ vault_zuul_clouds_projectID if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_projectID }}"
+        zuul_clouds_projectname: "{{ vault_zuul_clouds_projectname if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_projectname}}"
 
     - name: Ensure elements directory exists
       ansible.builtin.file:
