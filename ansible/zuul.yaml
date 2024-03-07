@@ -318,7 +318,7 @@
           providers:
             - name: gx-scs
               driver: openstack
-              cloud: gx-scs_zuul
+              cloud: openstack
               region-name: "RegionOne"
               rate: 3.0
               boot-timeout: 180
