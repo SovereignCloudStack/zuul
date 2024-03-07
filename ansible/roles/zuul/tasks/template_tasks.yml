@@ -30,7 +30,6 @@
     owner: "{{ zuul_user }}"
     group: "{{ zuul_group }}"
     mode: 0644
-  notify: Smart reload scheduler
 
 - name: Template nodepool-builder nodepool.yaml
   ansible.builtin.template:
@@ -78,3 +77,9 @@
     owner: "{{ zuul_user }}"
     group: "{{ zuul_group }}"
     mode: 0644
+
+# Pause added to try and mitigate the scheduler file not found error
+- name: Pause for 5 seconds
+  pause:
+    seconds: 5
+  notify: Smart reload scheduler
