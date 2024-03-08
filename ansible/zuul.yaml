@@ -128,16 +128,6 @@
         name: openstacksdk
         version: 2.0.0
  
-    # create directory to place your cloud connection information in
-    - name: Create /etc/openstack/
-      ansible.builtin.file:
-        state: directory
-        path: /etc/openstack
-        owner: root
-        group: root
-        mode: "0755"
-      become: true
-
     - name: Ensure group "zuul" exists
       ansible.builtin.group:
         name: zuul
@@ -150,43 +140,6 @@
         groups: zuul
         append: true
 
-    # copy cloud connection information
-    - name: Populate and copy clouds.yaml to VM
-      template:
-        src: "{{ playbook_dir }}/templates/clouds.yaml.j2"
-        dest: "/etc/openstack/clouds.yaml"
-        owner: root
-        group: zuul
-        mode: "0640"
-      become: true
-      vars:
-        zuul_clouds: "{{ vault_zuul_clouds_yaml if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_yaml }}"
-      tags: clouds-yaml
-
-    - name: Ensure elements directory exists
-      ansible.builtin.file:
-        path: /srv/nodepool/elements
-        state: directory
-        mode: '0755'
-        owner: zuul
-        group: zuul
-
-    - name: Ensure pem-files directory exists
-      ansible.builtin.file:
-        path: /opt/zuul/zuul_configuration/pem-files
-        state: directory
-        mode: '0755'
-        owner: zuul
-        group: zuul
-
-    - name: Copy pem files (e.g. for github)
-      ansible.builtin.template:
-        src: "scs-zuul-app-private-key.pem.j2"
-        dest: "/opt/zuul/zuul_configuration/pem-files/scs-zuul-app-private-key.pem"
-        owner: "root"
-        group: "root"
-        mode: 0644
-
     # get package-installs.yaml in place to provide additional
     # software configuration for the cloud images
     - name: Deploy package-installs.yaml file
@@ -195,39 +148,8 @@
         dest: /srv/nodepool/elements/package-installs.yaml
         owner: root
         group: zuul
-        mode: "0644"
+        mode: 0644
       become: true
-
-    # install recommended elements for zuul purposes
-    - name: Deploy additionals elements used for DIB
-      ansible.builtin.copy:
-        src: elements/
-        dest: /srv/nodepool/elements/
-        owner: root
-        group: zuul
-        mode: "0644"
-      become: true
-
-    - name: Ensure group "mysql" exists
-      ansible.builtin.group:
-        name: mysql
-        state: present
-
-    - name: Ensure the user 'mysql' exists
-      ansible.builtin.user:
-        name: mysql
-        shell: /bin/bash
-        groups: mysql
-        append: true
-
-    - name: Create mysql directory
-      become: true
-      ansible.builtin.file:
-        state: directory
-        path: "{{ zuul_base_conf_dir }}/mysql"
-        owner: "mysql"
-        group: "mysql"
-        mode: 0755
 
   roles:
     # use local zuul role to deploy a basic zuul setup
@@ -288,13 +210,6 @@
                     - SovereignCloudStack/zuul-config:
                         load-branch: main
                   untrusted-projects: "{{ untrusted_projects if ('zuul-logs-dev.scs.community' not in inventory_hostname) }}"
-
-
-        # nodepool labels configuration
-        zuul_nodepool_labels:
-          labels:
-            - name: ubuntu-jammy
-              min-ready: 2
 
         # nodepool providers configuration containing the openstack part
         # and the DIB (disk image builder)

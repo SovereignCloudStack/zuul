@@ -13,6 +13,27 @@
     group: "{{ zuul_group }}"
     mode: 0755
 
+- name: Ensure group "mysql" exists
+  ansible.builtin.group:
+    name: mysql
+    state: present
+
+- name: Ensure the user 'mysql' exists
+  ansible.builtin.user:
+    name: mysql
+    shell: /bin/bash
+    groups: mysql
+    append: true
+
+- name: Create mysql directory
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ zuul_base_conf_dir }}/mysql"
+    owner: mysql
+    group: mysql
+    mode: 0755
+
 # create directory to place cloud connection information in
 - name: Create /etc/openstack/
   ansible.builtin.file:
