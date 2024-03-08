@@ -96,6 +96,8 @@
 # install everything necessary to use the osism zuul role
 - name: Setup zuul playbook
   hosts: zuul
+  vars_files:
+    - "{{ playbook_dir }}/group_vars/zuul/zuul_vault.yaml"
   pre_tasks:
     - name: Ensure docker-compose is available
       become: true
@@ -148,26 +150,18 @@
         groups: zuul
         append: true
 
-    # copy cloud connection information to the right place
-    - name: Deploy clouds.yaml file for SCS zuul
-      ansible.builtin.copy:
-        src: clouds.yaml
-        dest: /etc/openstack/clouds.yaml
+    # copy cloud connection information
+    - name: Populate and copy clouds.yaml to VM
+      template:
+        src: "{{ playbook_dir }}/templates/clouds.yaml.j2"
+        dest: "/etc/openstack/clouds.yaml"
         owner: root
         group: zuul
         mode: "0640"
       become: true
-      when: "'zuul-logs-dev.scs.community' not in inventory_hostname"
-
-    - name: Deploy clouds-dev.yaml file for Gonicus dev zuul
-      ansible.builtin.copy:
-        src: clouds-dev.yaml
-        dest: /etc/openstack/clouds.yaml
-        owner: root
-        group: zuul
-        mode: "0640"
-      become: true
-      when: "'zuul-logs-dev.scs.community' in inventory_hostname"
+      vars:
+        zuul_clouds: "{{ vault_zuul_clouds_yaml if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_yaml }}"
+      tags: clouds-yaml
 
     - name: Ensure elements directory exists
       ansible.builtin.file:
@@ -176,6 +170,22 @@
         mode: '0755'
         owner: zuul
         group: zuul
+
+    - name: Ensure pem-files directory exists
+      ansible.builtin.file:
+        path: /opt/zuul/zuul_configuration/pem-files
+        state: directory
+        mode: '0755'
+        owner: zuul
+        group: zuul
+
+    - name: Copy pem files (e.g. for github)
+      ansible.builtin.template:
+        src: "scs-zuul-app-private-key.pem.j2"
+        dest: "/opt/zuul/zuul_configuration/pem-files/scs-zuul-app-private-key.pem"
+        owner: "root"
+        group: "root"
+        mode: 0644
 
     # get package-installs.yaml in place to provide additional
     # software configuration for the cloud images
@@ -223,7 +233,7 @@
             driver: github
             webhook_token: "{{ vault_github_webhook_token }}"
             app_id: "{{ vault_github_app_id }}"
-            app_key: "{{ vault_github_app_key }}"
+            app_key: "{{ vault_github_app_path }}"
           # we include public job definitions here
           opendevorg:
             name: opendev
@@ -308,7 +318,7 @@
           providers:
             - name: gx-scs
               driver: openstack
-              cloud: gx-scs_zuul
+              cloud: openstack
               region-name: "RegionOne"
               rate: 3.0
               boot-timeout: 180
