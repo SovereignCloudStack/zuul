@@ -1,5 +1,0 @@
-git:
-  uninstall: False
-  installtype: package
-ansible:
-python3-openstacksdk:

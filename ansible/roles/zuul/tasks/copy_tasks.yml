@@ -1,4 +1,17 @@
 ---
+# copy cloud connection information
+- name: Populate and copy clouds.yaml to VM
+  template:
+    src: "{{ playbook_dir }}/templates/clouds.yaml.j2"
+    dest: "/etc/openstack/clouds.yaml"
+    owner: root
+    group: zuul
+    mode: "0640"
+  become: true
+  vars:
+    zuul_clouds: "{{ vault_zuul_clouds_yaml if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_yaml }}"
+  tags: clouds-yaml
+
 - name: Copy zuul logging configs
   ansible.builtin.copy:
     src: "{{ item }}"

@@ -13,6 +13,32 @@
     group: "{{ zuul_group }}"
     mode: 0755
 
+# create directory to place cloud connection information in
+- name: Create /etc/openstack/
+  ansible.builtin.file:
+    state: directory
+    path: /etc/openstack
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+
+- name: Ensure elements directory exists
+  ansible.builtin.file:
+    path: /srv/nodepool/elements
+    state: directory
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+- name: Ensure pem-files directory exists
+  ansible.builtin.file:
+    path: /opt/zuul/zuul_configuration/pem-files
+    state: directory
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
 - name: Create component config directories
   ansible.builtin.file:
     state: directory
