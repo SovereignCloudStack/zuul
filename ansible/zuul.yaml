@@ -194,23 +194,6 @@
             user: "{{ vault_mqtt_user }}"
             password: "{{ vault_mqtt_password }}"
 
-        zuul_tenants:
-          - tenant:
-              name: SCS
-              exclude-unprotected-branches: true
-              source:
-                opendevorg:
-                  # just a repo to include some jobs definitions
-                  untrusted-projects:
-                    - zuul/zuul-jobs:
-                        include:
-                          - job
-                githubzuulapp:
-                  config-projects:
-                    - SovereignCloudStack/zuul-config:
-                        load-branch: main
-                  untrusted-projects: "{{ untrusted_projects if ('zuul-logs-dev.scs.community' not in inventory_hostname) }}"
-
         # nodepool providers configuration containing the openstack part
         # and the DIB (disk image builder)
         zuul_nodepool_providers:
@@ -276,57 +259,28 @@
                       console-log: true
                       key-name: zuul-nodepool
 
-# Manual amendments to the zuul role for letsencrypt
-- name: Create /opt/zuul/log_server/.well-known
+
+# use certbot rule to utilize initial cert creation
+- name: Install and configure certbot
   hosts: zuul
-  pre_tasks:
-    - name: Create /opt/zuul/log_server/.well-known
-      ansible.builtin.file:
-        state: directory
-        path: /opt/zuul/log_server/.well-known
-        owner: zuul
-        group: zuul
-        mode: "0755"
-
-    - name: Create /opt/zuul/log_server/.well-known/acme-challenge
-      ansible.builtin.file:
-        state: directory
-        path: /opt/zuul/log_server/.well-known/acme-challenge
-        owner: root
-        group: root
-        mode: "0755"
-      become: true
-
-    - name: Creating a file with content
-      ansible.builtin.copy:
-        dest: /opt/zuul/log_server/.well-known/acme-challenge/test
-        content: |
-          test
-        owner: root
-        group: root
-        mode: "0755"
-      become: true
-
+  become: true
+  vars:
+    certbot_install_method: package
+    certbot_auto_renew: true
+    certbot_create_if_missing: true
+    certbot_create_method: webroot
+    certbot_testmode: false
+    certbot_admin_email: "{{ zuul_webserver_admin_mail }}"
+    certbot_auto_renew_user: "root"
+    certbot_certs:
+      - webroot: "/opt/zuul/log_server"
+        domains:
+          - "{{ zuul_webserver_fqdn }}"
+          - "{{ zuul_logserver_fqdn }}"
   roles:
-    # use certbot rule to utilize initial cert creation
-    - name: Install and configure certbot
-      role: geerlingguy.certbot
-      become: true
-      vars:
-        certbot_install_method: package
-        certbot_auto_renew: true
-        certbot_create_if_missing: true
-        certbot_create_method: webroot
-        certbot_testmode: false
-        certbot_admin_email: "{{ zuul_webserver_admin_mail }}"
-        certbot_auto_renew_user: "root"
-        certbot_certs:
-          - webroot: "/opt/zuul/log_server"
-            domains:
-              - "{{ zuul_webserver_fqdn }}"
-              - "{{ zuul_logserver_fqdn }}"
-      tags:
-        - certbot
+    - geerlingguy.certbot
+  tags:
+    - certbot
 
 - name: Amend httpd.conf to use letsencrypt certs
   hosts: zuul

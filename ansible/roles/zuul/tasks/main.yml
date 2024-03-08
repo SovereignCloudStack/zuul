@@ -60,6 +60,24 @@
     group: "{{ zuul_group }}"
     mode: 0755
 
+# letsencrypt preperation
+- name: Create /opt/zuul/log_server/.well-known
+  ansible.builtin.file:
+    state: directory
+    path: /opt/zuul/log_server/.well-known
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+- name: Create /opt/zuul/log_server/.well-known/acme-challenge
+  ansible.builtin.file:
+    state: directory
+    path: /opt/zuul/log_server/.well-known/acme-challenge
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+
 - name: Create component config directories
   ansible.builtin.file:
     state: directory
