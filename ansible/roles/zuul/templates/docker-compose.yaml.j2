@@ -7,7 +7,7 @@ services:
     env_file: "{{ zuul_base_conf_dir }}/mariadb.env"
 {% if zuul_mariadb_volume | length > 0 %}
     volumes:
-      - "{{ zuul_mariadb_volume }}:/var/lib/mysql"
+      - "{{ zuul_mariadb_volume }}:/var/lib/mysql:rw"
 {% endif %}
   zookeeper:
     restart: unless-stopped
@@ -21,6 +21,8 @@ services:
     volumes:
       - "{{ zuul_component_conf_dirs.certs }}:/var/certs:z"
       - "{{ zuul_component_conf_dirs.zookeeper }}/zoo.cfg:/conf/zoo.cfg:z"
+      - "{{ zuul_component_conf_dirs.data }}:/data:rw"
+      - "{{ zuul_component_conf_dirs.datalogs }}:/datalogs:rw"
     command: zkServer.sh start-foreground
   nodepool_builder:
     restart: unless-stopped
