@@ -42,7 +42,8 @@ zuul_connections:
     driver: github
     webhook_token: "{{ webhook_token }}"
     app_id: "{{ github_app_id }}"
-    app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
+    app_key: |
+      {{ vault_github_app_key }}
   opendevorg:
     name: opendev
     driver: git

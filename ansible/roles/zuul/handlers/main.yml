@@ -4,4 +4,6 @@
 - name: Smart reload scheduler
   community.docker.docker_container_exec:
     container: zuul_scheduler
-    command: zuul-scheduler smart-reconfigure
+    command: /usr/bin/bash -C "/usr/local/bin/zuul-scheduler smart-reconfigure"
+
+
