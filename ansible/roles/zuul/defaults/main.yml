@@ -155,7 +155,8 @@ untrusted_projects:
 - SovereignCloudStack/infrastructure
 - SovereignCloudStack/issues
 - SovereignCloudStack/k8s-cassandra
-- SovereignCloudStack/k8s-cluster-api-provider
+- SovereignCloudStack/k8s-cluster-api-provider:
+    exclude-unprotected-branches: true
 - SovereignCloudStack/k8s-cortex
 - SovereignCloudStack/k8s-gatekeeper
 - SovereignCloudStack/k8s-grafana
@@ -173,11 +174,15 @@ untrusted_projects:
 - SovereignCloudStack/poc-gardener
 - SovereignCloudStack/poc-kubermatic
 - SovereignCloudStack/poc-rancher
+- SovereignCloudStack/security-infra-scan-pipeline:
+    exclude-unprotected-branches: true
 - SovereignCloudStack/testbed-gx-iam
 - SovereignCloudStack/testbed-gx-k8s
 - SovereignCloudStack/testbed-gx-scs
 - SovereignCloudStack/website
 - SovereignCloudStack/zuul_deployment
 - SovereignCloudStack/status-page-api
-- SovereignCloudStack/standards
+- SovereignCloudStack/standards:
+    exclude-unprotected-branches: true
 - SovereignCloudStack/container-images
+- SovereignCloudStack/zuul-mqtt-matrix-bridge
