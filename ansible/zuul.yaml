@@ -40,6 +40,29 @@
         path: "{{ playbook_dir }}/files/nodepool"
         state: present
 
+- name: Disable unattended updates
+  hosts: zuul
+  become: true
+
+  tasks:
+    - name: Stop unattended-upgrades service
+      become: true
+      systemd:
+        name: unattended-upgrades
+        state: stopped
+
+    - name: Disable unattended-upgrades service
+      become: true
+      systemd:
+        name: unattended-upgrades
+        enabled: no
+
+    - name: Mask unattended-upgrades service
+      become: true
+      systemd:
+        name: unattended-upgrades
+        masked: yes
+
 - name: Install pip using Ansible
   hosts: zuul
   become: true
