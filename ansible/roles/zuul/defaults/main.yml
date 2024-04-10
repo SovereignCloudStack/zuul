@@ -25,7 +25,7 @@ zuul_component_conf_dirs:
   log_server: "{{ zuul_base_conf_dir }}/log_server"
   scheduler: "{{ zuul_base_conf_dir }}/scheduler"
   data: "{{ zuul_base_conf_dir }}/data"
-  datalogs: "{{ zuul_base_conf_dir }}/datalogs"
+  datalog: "{{ zuul_base_conf_dir }}/datalog"
 
 
 ###############################################################################
@@ -39,39 +39,9 @@ zuul_mariadb_volume: "{{ zuul_base_conf_dir }}/mysql"
 # Zuul
 ###############################################################################
 
-zuul_connections:
-  github:
-    driver: github
-    webhook_token: "{{ webhook_token }}"
-    app_id: "{{ github_app_id }}"
-    app_key: |
-      {{ vault_github_app_key }}
-  opendevorg:
-    name: opendev
-    driver: git
-    baseurl: https://opendev.org
-
-zuul_tenants:
-  - tenant:
-      name: my-tenant-name
-      source:
-        opendevorg:
-          untrusted-projects:
-            - zuul/zuul-jobs:
-                include:
-                  - job
-        githubzuulapp:
-          config-projects:
-            - tibeerorg/zuul_config:
-                load-branch: main
-          untrusted-projects:
-            - tibeerorg/zuul_demo_repo
-
-zuul_metrics_statsd_host: ""
 zuul_metrics_statsd_port: "8125"
 zuul_metrics_statsd_prefix: ""
 
-zuul_zookeeper_metrics: false
 zuul_zookeeper_metrics_port: 7000
 
 ###############################################################################
@@ -96,12 +66,6 @@ zuul_scheduler_image: "{{ docker_registry_zuul }}/zuul-ci/zuul-scheduler:{{ zuul
 zuul_web_image: "{{ docker_registry_zuul }}/zuul-ci/zuul-web:{{ zuul_zuul_tag }}"
 zuul_zookeeper_image: "{{ docker_registry }}/zookeeper:{{ zuul_zookeeper_tag }}"
 
-zuul_database:
-  user_name: zuul
-  user_pass: secret
-  root_pass: rootpassword
-  db_name: zuul
-
 container_name:
   mariadb: "zuul_mariadb"
   zookeeper: "zuul_zookeeper"
@@ -119,6 +83,171 @@ container_name:
 zuul_nodepool_labels:
   labels:  # we need this sub-key. limitation of to_nice_yaml library
     - name: ubuntu-jammy
+      min-ready: 2
 
+###############################################################################
+# Moved from Playbook
+###############################################################################
+
+zuul_tenants:
+  - tenant:
+      name: SCS
+      exclude-unprotected-branches: true
+      source:
+        opendevorg:
+          # just a repo to include some jobs definitions
+          untrusted-projects:
+            - zuul/zuul-jobs:
+                include:
+                  - job
+        githubzuulapp:
+          config-projects:
+            - SovereignCloudStack/zuul-config:
+                load-branch: main
+          untrusted-projects: "{{ untrusted_projects if ('zuul-logs-dev.scs.community' not in inventory_hostname) }}"
+
+untrusted_projects:
+- SovereignCloudStack/Design-Docs
+- SovereignCloudStack/Operational-Docs
+- SovereignCloudStack/contributor-guide
+- SovereignCloudStack/docker-horizon
+- SovereignCloudStack/documentation
+- SovereignCloudStack/generics
+- SovereignCloudStack/graphics
+- SovereignCloudStack/gx-scs-identity-provider
+- SovereignCloudStack/infrastructure
+- SovereignCloudStack/issues
+- SovereignCloudStack/k8s-cassandra
+- SovereignCloudStack/k8s-cluster-api-provider:
+    exclude-unprotected-branches: true
+- SovereignCloudStack/k8s-cortex
+- SovereignCloudStack/k8s-gatekeeper
+- SovereignCloudStack/k8s-grafana
+- SovereignCloudStack/k8s-harbor
+- SovereignCloudStack/k8s-harbor-manual
+- SovereignCloudStack/k8s-minio
+- SovereignCloudStack/k8s-open-policy-agent
+- SovereignCloudStack/k8s-operator-scylla
+- SovereignCloudStack/k8s-os-health-monitor
+- SovereignCloudStack/k8s-prometheus
+- SovereignCloudStack/k8s-template
+- SovereignCloudStack/openstack-flavor-manager
+- SovereignCloudStack/openstack-health-monitor
+- SovereignCloudStack/openstack-vyos-image
+- SovereignCloudStack/poc-gardener
+- SovereignCloudStack/poc-kubermatic
+- SovereignCloudStack/poc-rancher
+- SovereignCloudStack/security-infra-scan-pipeline:
+    exclude-unprotected-branches: true
+- SovereignCloudStack/testbed-gx-iam
+- SovereignCloudStack/testbed-gx-k8s
+- SovereignCloudStack/testbed-gx-scs
+- SovereignCloudStack/website
+- SovereignCloudStack/zuul_deployment
+- SovereignCloudStack/status-page-api
+- SovereignCloudStack/standards:
+    exclude-unprotected-branches: true
+- SovereignCloudStack/container-images
+- SovereignCloudStack/zuul-mqtt-matrix-bridge
+
+zuul_auth_secret: "{{ vault_zuul_auth_secret }}"
+
+zuul_zookeeper_metrics: true
+zuul_metrics_statsd_host: "{{ zuul_statsd_host }}"
+
+zuul_database:
+  user_name: "{{ vault_db_user_name }}"
+  user_pass: "{{ vault_db_user_pass }}"
+  root_pass: "{{ vault_db_root_pass }}"
+  db_name: "{{ vault_db_name }}"
+
+zuul_connections:
+  # since we want to interact with github we need
+  # a github app. The apps values go here.
+  # Read more about github application: https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/about-creating-github-apps
+  githubzuulapp:
+    driver: github
+    webhook_token: "{{ vault_github_webhook_token }}"
+    app_id: "{{ vault_github_app_id }}"
+    app_key: "{{ vault_github_app_path }}"
+  # we include public job definitions here
+  opendevorg:
+    name: opendev
+    driver: git
+    baseurl: https://opendev.org
+  # To view Zuul reports in the Matrix chat, we must use Zuul MQTT reports.
+  # Since the direct path from MQTT to Matrix is unsupported,
+  # we send MQTT reports through the zuul-mqtt-matrix-bridge,
+  # which acts as a relay, transferring MQTT reports from Zuul to the Matrix chat.
+  mqtt:
+    name: mqtt
+    driver: mqtt
+    server: "{{ vault_mqtt_server }}"
+    port: "{{ vault_mqtt_port }}"
+    user: "{{ vault_mqtt_user }}"
+    password: "{{ vault_mqtt_password }}"
+
+# nodepool providers configuration containing the openstack part
+# and the DIB (disk image builder)
 zuul_nodepool_providers:
-  providers:  # we need this sub-key. limitation of to_nice_yaml library
+  elements-dir: /srv/nodepool/elements
+  diskimages:
+    - name: base
+      abstract: true
+      elements:
+        - vm
+        - block-device-efi
+        - growroot
+        - enable-serial-console
+        - cloud-init
+        - pkg-map
+        - infra-package-needs
+        - zuul-worker
+      formats:
+        - qcow2
+      env-vars:
+        TMPDIR: /srv/dib_tmp
+        DIB_CHECKSUM: "1"
+        DIB_IMAGE_CACHE: /srv/dib_cache
+        DIB_CLOUD_INIT_DATASOURCES: OpenStack
+
+    - name: ubuntu-jammy
+      parent: base
+      pause: false
+      rebuild-age: 86400
+      elements:
+        - ubuntu-minimal
+      release: jammy
+      username: ubuntu
+      formats:
+        - qcow2
+      env-vars:
+        DIB_APT_LOCAL_CACHE: "0"
+        DIB_DISABLE_APT_CLEANUP: "1"
+        FS_TYPE: ext3
+        DIB_RELEASE: jammy
+
+  providers:
+    - name: gx-scs
+      driver: openstack
+      cloud: openstack
+      region-name: "RegionOne"
+      rate: 3.0
+      boot-timeout: 180
+      launch-retries: 3
+      diskimages:
+        - name: ubuntu-jammy
+          pause: false
+      pools:
+        - name: main
+          max-servers: 4
+          networks:
+            - zuul_network
+          security-groups:
+            - zuul_secgroup
+          labels:
+            - name: ubuntu-jammy
+              flavor-name: SCS-2V-8-20
+              diskimage: ubuntu-jammy
+              console-log: true
+              key-name: zuul-nodepool

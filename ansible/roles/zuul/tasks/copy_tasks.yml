@@ -1,4 +1,35 @@
 ---
+# copy cloud connection information
+- name: Populate and copy clouds.yaml to VM
+  template:
+    src: "templates/clouds.yaml.j2"
+    dest: "/etc/openstack/clouds.yaml"
+    owner: root
+    group: zuul
+    mode: 0640
+  become: true
+  vars:
+    zuul_clouds: "{{ vault_zuul_clouds_yaml if ('zuul-logs-dev.scs.community' not in inventory_hostname) else vault_zuul_dev_clouds_yaml }}"
+  tags: clouds-yaml
+
+- name: Copy pem files (e.g. for github)
+  ansible.builtin.template:
+    src: "templates/scs-zuul-app-private-key.pem.j2"
+    dest: "/opt/zuul/zuul_configuration/pem-files/scs-zuul-app-private-key.pem"
+    owner: root
+    group: root
+    mode: 0644
+
+# install recommended elements for zuul purposes
+- name: Deploy additionals elements used for DIB
+  ansible.builtin.copy:
+    src: elements/
+    dest: /srv/nodepool/elements/
+    owner: root
+    group: "{{ zuul_group }}"
+    mode: 0644
+  become: true
+
 - name: Copy zuul logging configs
   ansible.builtin.copy:
     src: "{{ item }}"

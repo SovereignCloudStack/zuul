@@ -13,6 +13,71 @@
     group: "{{ zuul_group }}"
     mode: 0755
 
+- name: Ensure group "mysql" exists
+  ansible.builtin.group:
+    name: mysql
+    state: present
+
+- name: Ensure the user 'mysql' exists
+  ansible.builtin.user:
+    name: mysql
+    shell: /bin/bash
+    groups: mysql
+    append: true
+
+- name: Create mysql directory
+  become: true
+  ansible.builtin.file:
+    state: directory
+    path: "{{ zuul_base_conf_dir }}/mysql"
+    owner: mysql
+    group: mysql
+    mode: 0755
+
+# create directory to place cloud connection information in
+- name: Create /etc/openstack/
+  ansible.builtin.file:
+    state: directory
+    path: /etc/openstack
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+
+- name: Ensure elements directory exists
+  ansible.builtin.file:
+    path: /srv/nodepool/elements
+    state: directory
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+- name: Ensure pem-files directory exists
+  ansible.builtin.file:
+    path: /opt/zuul/zuul_configuration/pem-files
+    state: directory
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+# letsencrypt preperation
+- name: Create /opt/zuul/log_server/.well-known
+  ansible.builtin.file:
+    state: directory
+    path: /opt/zuul/log_server/.well-known
+    owner: "{{ zuul_user }}"
+    group: "{{ zuul_group }}"
+    mode: 0755
+
+- name: Create /opt/zuul/log_server/.well-known/acme-challenge
+  ansible.builtin.file:
+    state: directory
+    path: /opt/zuul/log_server/.well-known/acme-challenge
+    owner: root
+    group: root
+    mode: 0755
+  become: true
+
 - name: Create component config directories
   ansible.builtin.file:
     state: directory
