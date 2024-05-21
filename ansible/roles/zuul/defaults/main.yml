@@ -149,6 +149,7 @@ untrusted_projects:
     exclude-unprotected-branches: true
 - SovereignCloudStack/container-images
 - SovereignCloudStack/zuul-mqtt-matrix-bridge
+- SovereignCloudStack/cluster-stacks
 
 zuul_auth_secret: "{{ vault_zuul_auth_secret }}"
 
