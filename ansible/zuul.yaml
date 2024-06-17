@@ -254,6 +254,27 @@
         - restart
         - config-change
 
+- name: Ensure the weekly cron job is present
+  hosts: zuul
+  become: yes
+
+  tasks:
+    - name: Check if the cron job for exporting Zuul master keys already exists
+      shell: "crontab -l | grep -F 'sudo /usr/bin/docker exec zuul_executor zuul-admin export-keys /var/certs/masterkeys-backup.json'"
+      register: cron_job_check
+      ignore_errors: true
+
+    - name: Add a cron job to export keys weekly at 2 AM every Monday if it doesn't exist
+      cron:
+        name: "Export Zuul master keys"
+        minute: "0"
+        hour: "2"
+        day: "*"
+        month: "*"
+        weekday: "1" # 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        job: "sudo /usr/bin/docker exec zuul_executor zuul-admin export-keys /var/certs/masterkeys-backup.json"
+      when: cron_job_check.rc != 0
+
 - name: Remove locally created SSL certificates
   hosts: localhost
   become: false
