@@ -292,3 +292,56 @@
         - "{{ playbook_dir }}/files/nodepool*"
   tags: delete-certs
 
+- name: Set up log rotation for Docker, Zuul, and Nodepool logs
+  hosts: zuul
+  become: yes
+  tasks:
+    - name: Ensure docker daemon configuration directory exists
+      file:
+        path: /etc/docker
+        state: directory
+
+    - name: Create and configure /etc/docker/daemon.json
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "7"
+            }
+          }
+      notify:
+        - Restart Docker
+
+    - name: Install logrotate
+      apt:
+        name: logrotate
+        state: present
+
+    - name: Configure logrotate for Zuul and Nodepool logs
+      copy:
+        dest: /etc/logrotate.d/zuul_nodepool_logs
+        content: |
+          /var/log/nodepool/*.log /var/log/zuul/*.log {
+              daily
+              rotate 7
+              compress
+              missingok
+              notifempty
+              create 0640 root adm
+              sharedscripts
+              postrotate
+                  # Add any necessary commands here if needed
+              endscript
+          }
+
+    - name: Force logrotate to apply new configuration
+      command: logrotate -f /etc/logrotate.d/zuul_nodepool_logs
+
+  handlers:
+    - name: Restart Docker
+      service:
+        name: docker
+        state: restarted
