@@ -5,6 +5,11 @@ services:
     container_name: "{{ container_name.mariadb }}"
     image: "{{ zuul_mariadb_image }}"
     env_file: "{{ zuul_base_conf_dir }}/mariadb.env"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
 {% if zuul_mariadb_volume | length > 0 %}
     volumes:
       - "{{ zuul_mariadb_volume }}:/var/lib/mysql:rw"
@@ -14,6 +19,11 @@ services:
     container_name: "{{ container_name.zookeeper }}"
     image: "{{ zuul_zookeeper_image }}"
     hostname: {{ zuul_zookeeper_fqdn }}
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
 {% if zuul_zookeeper_metrics | bool %}
     ports:
       - "{{ zuul_zookeeper_metrics_port }}:{{ zuul_zookeeper_metrics_port }}"
@@ -33,6 +43,11 @@ services:
     env_file: "{{ zuul_base_conf_dir }}/nodepool_builder.env"
     image: "{{ zuul_nodepool_builder_image }}"
     privileged: true
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
     volumes:
       - "{{ zuul_component_conf_dirs.nodepool_builder }}:/etc/nodepool/:z"
       - "{{ zuul_component_conf_dirs.certs }}:/var/certs:z"
@@ -49,6 +64,11 @@ services:
       - zookeeper
     env_file: "{{ zuul_base_conf_dir }}/nodepool_launcher.env"
     image: "{{ zuul_nodepool_launcher_image }}"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
     volumes:
       - "{{ zuul_component_conf_dirs.nodepool_launcher }}:/etc/nodepool/:z"
       - "{{ zuul_component_conf_dirs.certs }}:/var/certs:z"
@@ -63,6 +83,11 @@ services:
     env_file: "{{ zuul_base_conf_dir }}/scheduler.env"
     command: "sh -c '/wait-to-start.sh && zuul-scheduler -f'"
     image: "{{ zuul_scheduler_image }}"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
     volumes:
       - "{{ zuul_component_conf_dirs.zuul }}:/etc/zuul/:z"
       - "{{ zuul_component_conf_dirs.ssh_keys }}:/var/ssh:z"
@@ -79,6 +104,11 @@ services:
       - "9000:9000"
     image: "{{ zuul_web_image }}"
     env_file: "{{ zuul_base_conf_dir }}/web.env"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
     volumes:
       - "{{ zuul_component_conf_dirs.zuul }}:/etc/zuul/:z"
       - "{{ zuul_component_conf_dirs.certs }}:/var/certs:z"
@@ -91,6 +121,11 @@ services:
     depends_on:
       - zuul_scheduler
     image: "{{ zuul_executor_image }}"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
     volumes:
       - "{{ zuul_component_conf_dirs.zuul }}:/etc/zuul/:z"
       - "{{ zuul_component_conf_dirs.ssh_keys }}:/var/ssh:z"
@@ -101,6 +136,11 @@ services:
     restart: unless-stopped
     container_name: "{{ container_name.log_server }}"
     image: "{{ zuul_log_server_image }}"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "7"   # number of files or file count
+        max-size: "10m" # file size
     ports:
       - "80:80"
       - "443:443"
