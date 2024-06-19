@@ -326,10 +326,11 @@
         content: |
           /var/log/nodepool/*.log /var/log/zuul/*.log {
               daily
-              rotate 7
+              rotate 10
               compress
               missingok
               notifempty
+              copytruncate
               create 0640 root adm
               sharedscripts
               postrotate
