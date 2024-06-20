@@ -3,10 +3,14 @@
 # Secret Values in group_vars/zuul/zuul_vault.yaml
 
 zuul_log_server_tag: "alpine"
-zuul_mariadb_tag: "11.1"
-zuul_zuul_tag: "9.2.0"
-zuul_nodepool_tag: "9.0.0"
-zuul_zookeeper_tag: "3.7.2"
+#zuul_mariadb_tag: "11.1"
+#zuul_zuul_tag: "9.2.0"
+#zuul_nodepool_tag: "9.0.0"
+#zuul_zookeeper_tag: "3.7.2"
+zuul_mariadb_tag: "11.4.2"
+zuul_nodepool_tag: "10.0.0"
+zuul_zookeeper_tag: "3.9.2"
+zuul_zuul_tag: "10.1.0"
 
 zuul_statsd_host: "213.131.230.154"
 
