@@ -165,6 +165,15 @@
 
     # get package-installs.yaml in place to provide additional
     # software configuration for the cloud images
+    - name: Create package-install directory
+      become: true
+      ansible.builtin.file:
+        state: directory
+        path: "/srv/nodepool/elements/"
+        owner: "zuul"
+        group: "zuul"
+        mode: 0755
+
     - name: Deploy package-installs.yaml file
       ansible.builtin.copy:
         src: package-installs.yaml
