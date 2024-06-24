@@ -165,6 +165,15 @@
 
     # get package-installs.yaml in place to provide additional
     # software configuration for the cloud images
+    - name: Create package-install directory
+      become: true
+      ansible.builtin.file:
+        state: directory
+        path: "/srv/nodepool/elements/"
+        owner: "zuul"
+        group: "zuul"
+        mode: 0755
+
     - name: Deploy package-installs.yaml file
       ansible.builtin.copy:
         src: package-installs.yaml
@@ -254,26 +263,37 @@
         - restart
         - config-change
 
-- name: Ensure the weekly cron job is present
+- name: Ensure cron jobs are present
   hosts: zuul
   become: yes
-
   tasks:
-    - name: Check if the cron job for exporting Zuul master keys already exists
-      shell: "crontab -l | grep -F 'sudo /usr/bin/docker exec zuul_executor zuul-admin export-keys /var/certs/masterkeys-backup.json'"
+    - name: Check if the daily cron job for exporting Nodepool images already exists
+      command: "crontab -l | grep -F 'sudo docker exec -it zuul_nodepool_builder nodepool export-image-data /etc/nodepool/image-export.bak'"
       register: cron_job_check
       ignore_errors: true
 
-    - name: Add a cron job to export keys weekly at 2 AM every Monday if it doesn't exist
+    - name: Add daily cron job to export Nodepool images at 3 AM if it doesn't exist
+      cron:
+        name: "Export Nodepool images"
+        minute: "0"
+        hour: "3"
+        job: "sudo docker exec -it zuul_nodepool_builder nodepool export-image-data /etc/nodepool/image-export.bak"
+      when: cron_job_check.rc != 0
+
+    - name: Check if the weekly cron job for exporting Zuul master keys already exists
+      command: "crontab -l | grep -F 'sudo /usr/bin/docker exec zuul_executor zuul-admin export-keys /var/certs/masterkeys-backup.json'"
+      register: cron_job_week_check
+      ignore_errors: true
+
+    - name: Add weekly cron job to export Zuul master keys at 2 AM every Monday if it doesn't exist
       cron:
         name: "Export Zuul master keys"
         minute: "0"
         hour: "2"
-        day: "*"
-        month: "*"
-        weekday: "1" # 0 = Sunday, 1 = Monday, ..., 6 = Saturday
         job: "sudo /usr/bin/docker exec zuul_executor zuul-admin export-keys /var/certs/masterkeys-backup.json"
-      when: cron_job_check.rc != 0
+        weekday: "1"  # 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      when: cron_job_week_check.rc != 0
+
 
 - name: Remove locally created SSL certificates
   hosts: localhost
@@ -301,20 +321,6 @@
         path: /etc/docker
         state: directory
 
-    - name: Create and configure /etc/docker/daemon.json
-      copy:
-        dest: /etc/docker/daemon.json
-        content: |
-          {
-            "log-driver": "json-file",
-            "log-opts": {
-              "max-size": "10m",
-              "max-file": "7"
-            }
-          }
-      notify:
-        - Restart Docker
-
     - name: Install logrotate
       apt:
         name: logrotate
@@ -340,9 +346,3 @@
 
     - name: Force logrotate to apply new configuration
       command: logrotate -f /etc/logrotate.d/zuul_nodepool_logs
-
-  handlers:
-    - name: Restart Docker
-      service:
-        name: docker
-        state: restarted
