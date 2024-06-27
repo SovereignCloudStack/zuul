@@ -346,3 +346,16 @@
 
     - name: Force logrotate to apply new configuration
       command: logrotate -f /etc/logrotate.d/zuul_nodepool_logs
+
+#Install and configure the monitoring for prod only
+- name: Setup Exporters
+  hosts: zuul
+  become: true
+  pre_tasks:
+    - name: Ensure this playbook runs only on zuul.scs.community
+      debug:
+        msg: "This playbook is running on zuul.scs.community"
+      when: inventory_hostname == 'zuul.scs.community'
+  roles:
+    - { role: node-exporter, when: inventory_hostname == 'zuul.scs.community' }
+    - { role: cadvisor, when: inventory_hostname == 'zuul.scs.community' }
