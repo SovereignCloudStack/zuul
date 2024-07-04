@@ -154,6 +154,7 @@ untrusted_projects:
 - SovereignCloudStack/container-images
 - SovereignCloudStack/zuul-mqtt-matrix-bridge
 - SovereignCloudStack/cluster-stacks
+- SovereignCloudStack/central-api
 
 zuul_auth_secret: "{{ vault_zuul_auth_secret }}"
 
