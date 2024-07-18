@@ -331,7 +331,8 @@
         dest: /etc/logrotate.d/zuul_nodepool_logs
         content: |
           /var/log/nodepool/*.log /var/log/zuul/*.log {
-              daily
+              hourly
+              maxsize 200M
               rotate 10
               compress
               missingok
